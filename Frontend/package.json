@@ -1,0 +1,52 @@
+{
+  "name": "bidda-frontend",
+  "homepage": "https://Tamim2102028.github.io/bidda-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@supabase/supabase-js": "^2.105.4",
+    "@tailwindcss/vite": "^4.2.2",
+    "@tanstack/react-query": "^5.90.11",
+    "axios": "^1.12.2",
+    "dayjs": "^1.11.18",
+    "jszip": "^3.10.1",
+    "katex": "^0.16.45",
+    "lucide-react": "^1.20.0",
+    "phaser": "^4.0.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-hook-form": "^7.69.0",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^7.9.1",
+    "sonner": "^2.0.7",
+    "sweetalert2": "^11.26.3",
+    "tailwindcss": "^4.1.13",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "@tanstack/eslint-plugin-query": "^5.91.2",
+    "@types/jszip": "^3.4.0",
+    "@types/katex": "^0.16.8",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^6.0.1",
+    "baseline-browser-mapping": "^2.9.17",
+    "eslint": "^9.35.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.4.0",
+    "prettier-plugin-tailwindcss": "^0.6.14",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.43.0",
+    "vite": "^8.0.8"
+  }
+}
