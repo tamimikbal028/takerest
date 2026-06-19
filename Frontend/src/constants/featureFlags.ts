@@ -8,7 +8,7 @@ export const FEATURE_FLAGS = {
   INSTITUTIONS: true,
   DEPARTMENTS: true,
   FRIENDS: true,
-  GAMING: true,
+  GAMING: false,
   NOTIFICATIONS: false,
   MESSAGES: true,
   STUDY_HELPER: false,
