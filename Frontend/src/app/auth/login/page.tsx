@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { NavLink } from "react-router-dom";
 import { FaEye, FaEyeSlash, FaUpload, FaShareAlt } from "react-icons/fa";
 import { useForm } from "react-hook-form";
@@ -6,7 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import authHooks from "@/hooks/useAuth";
 import SubmitToBox from "@/app/submit-box/SubmitToBox";
-import QuickShareWidget from "@/app/quick-share";
+
+const QuickShareWidget = lazy(() => import("@/app/quick-share"));
 
 // Zod Schema for Login
 const loginSchema = z.object({
@@ -238,9 +239,17 @@ const Login = () => {
         )}
 
         {activeView === "quick-share" && (
-          <div className="animate-fade-in w-full">
-            <QuickShareWidget />
-          </div>
+          <Suspense
+            fallback={
+              <div className="py-4 text-center text-sm text-gray-500">
+                Loading...
+              </div>
+            }
+          >
+            <div className="animate-fade-in w-full">
+              <QuickShareWidget />
+            </div>
+          </Suspense>
         )}
 
         {activeView === "login" ? (
