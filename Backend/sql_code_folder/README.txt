@@ -1,28 +1,33 @@
-========================================================
-MAINTENANCE NOTE FOR SCHEMA FILES
-========================================================
+==============================================================================
+TAKE REST (Study & Rest/Break Tracker Platform)
+DATABASE SETUP INSTRUCTIONS (FOR SUPABASE)
+==============================================================================
 
-1. SOURCE OF TRUTH:
-   - `master/db_setup_master.sql` is the full database master script.
-   - `master/storage_setup_master.sql` is the full storage master script.
-   - Storage setup defines bucket metadata only; no bucket-specific policies are defined here because backend uploads use the service-role key.
+Option 1: Single-Step Setup (Recommended)
+------------------------------------------------------------------------------
+1. Open your Supabase Project Dashboard (https://supabase.com/dashboard).
+2. Go to the "SQL Editor" tab from the left sidebar.
+3. Click "New query".
+4. Copy the entire contents of:
+   sql_code_folder/db_setup_master.sql
+5. Paste into the SQL Editor and click "Run".
+6. Done! All tables, types, triggers, indexes, and RLS policies are created.
 
-2. ORDERED SQL SLICES:
-   - Use the `ordered/` files when you want to run setup in SQL editor order.
-   - Run them in numeric order:
-     `00_reset.sql` -> `01_extensions_types.sql` -> `02_tables.sql` -> `03_indexes.sql` -> `04_functions.sql` -> `05_triggers.sql` -> `06_policies.sql` -> `07_grants.sql`
-   - Storage buckets are defined only in `master/storage_setup_master.sql`; there is no ordered storage slice anymore.
+Option 2: Step-by-Step Setup
+------------------------------------------------------------------------------
+Run the files in the "ordered" directory in numerical order:
+1. ordered/01_extensions_types.sql  -> Sets up extensions and enums
+2. ordered/02_tables.sql            -> Creates users, subjects, sessions, preferences
+3. ordered/03_indexes.sql           -> Creates performance indexes
+4. ordered/04_functions.sql         -> Creates functions (handle_new_user, set_updated_at)
+5. ordered/05_triggers.sql          -> Attaches triggers
+6. ordered/06_policies.sql          -> Enables and creates Row Level Security (RLS)
+7. ordered/07_grants.sql            -> Grants access permissions to service_role
 
-3. SYNC RULE:
-   - Whenever the master scripts change, regenerate the ordered files immediately so they stay identical in behavior.
-   - Do not edit the ordered files in a way that diverges from the master scripts.
-
-4. TABLE ANNOTATION:
-   - In `02_tables.sql`, keep the table start comments like `-- [Table: Users]` so it is clear where each table block begins.
-
-5. DATABASE FLATTENING (ANTI-NESTING POLICY):
-   - Always prefer flat/independent columns (e.g., `student_session`, `student_cgpa`, `faculty_office_room`) instead of nesting fields within objects or JSONB (which was MongoDB's approach).
-   - This is critical to maintain native SQL indexing performance, type-safety, simple frontend mapping, and secure RLS (Row Level Security) policies.
-   - EXCEPTION: Nested structures (JSONB) are only allowed for highly dynamic links/metadata where database querying or indexing is not required (e.g., `social_links`).
-
-========================================================
+What Gets Created:
+------------------------------------------------------------------------------
+- users: Core user profiles (synced with auth.users)
+- tracker_subjects: User-created subjects with target hours, colors, icons
+- tracker_sessions: Study & Break logs with durations, focus ratings, notes
+- tracker_preferences: Daily goals, pomodoro work/break lengths, sound settings
+- Starter defaults: Whenever a new user signs up, default preferences and 3 starter subjects are automatically generated for them.

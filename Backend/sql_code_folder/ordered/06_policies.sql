@@ -1,46 +1,38 @@
--- ========================================================
--- CLEANUP & ENABLE RLS DYNAMICALLY ON ALL TABLES
--- ========================================================
-DO $$ 
-DECLARE 
-    r RECORD;
-BEGIN 
-    -- 1. Drop all existing RLS policies in public schema
-    FOR r IN (
-        SELECT policyname, tablename 
-        FROM pg_policies 
-        WHERE schemaname = 'public'
-    ) LOOP 
-        EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON public.' || quote_ident(r.tablename);
-    END LOOP;
+-- ROW LEVEL SECURITY (RLS) POLICIES
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tracker_subjects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tracker_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tracker_preferences ENABLE ROW LEVEL SECURITY;
 
-    -- 2. Enable RLS on all tables in public schema dynamically
-    FOR r IN (
-        SELECT tablename 
-        FROM pg_tables 
-        WHERE schemaname = 'public'
-    ) LOOP 
-        EXECUTE 'ALTER TABLE public.' || quote_ident(r.tablename) || ' ENABLE ROW LEVEL SECURITY';
-    END LOOP;
-END $$;
+-- 1. Users policies
+DROP POLICY IF EXISTS "Users can view public profile or self" ON public.users;
+CREATE POLICY "Users can view public profile or self"
+  ON public.users FOR SELECT TO authenticated
+  USING (true);
 
--- ========================================================
--- READ POSTS (Direct Supabase Call)
--- ========================================================
-create policy "read_posts_select_self"
-  on public.read_posts
-  for select
-  to authenticated
-  using (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
+CREATE POLICY "Users can update own profile"
+  ON public.users FOR UPDATE TO authenticated
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
 
-create policy "read_posts_manage_self"
-  on public.read_posts
-  for insert
-  to authenticated
-  with check (auth.uid() = user_id);
+-- 2. Tracker Subjects policies
+DROP POLICY IF EXISTS "Users can manage own subjects" ON public.tracker_subjects;
+CREATE POLICY "Users can manage own subjects"
+  ON public.tracker_subjects FOR ALL TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
-create policy "read_posts_delete_self"
-  on public.read_posts
-  for delete
-  to authenticated
-  using (auth.uid() = user_id);
+-- 3. Tracker Sessions policies
+DROP POLICY IF EXISTS "Users can manage own sessions" ON public.tracker_sessions;
+CREATE POLICY "Users can manage own sessions"
+  ON public.tracker_sessions FOR ALL TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- 4. Tracker Preferences policies
+DROP POLICY IF EXISTS "Users can manage own tracker preferences" ON public.tracker_preferences;
+CREATE POLICY "Users can manage own tracker preferences"
+  ON public.tracker_preferences FOR ALL TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
