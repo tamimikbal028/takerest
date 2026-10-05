@@ -1,4 +1,4 @@
--- 1. CORE USERS TABLE (Linked to auth.users)
+-- CORE USERS TABLE (Linked to auth.users)
 CREATE TABLE IF NOT EXISTS public.users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name TEXT NOT NULL,
@@ -21,46 +21,5 @@ CREATE TABLE IF NOT EXISTS public.users (
   is_comment_blocked BOOLEAN NOT NULL DEFAULT false,
   is_message_blocked BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- 2. TRACKER SUBJECTS TABLE (User's subjects / topics)
-CREATE TABLE IF NOT EXISTS public.tracker_subjects (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  color TEXT NOT NULL DEFAULT '#3B82F6',
-  icon TEXT DEFAULT 'book',
-  target_hours_per_week NUMERIC(5, 2) NOT NULL DEFAULT 5.00 CHECK (target_hours_per_week >= 0),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- 3. TRACKER SESSIONS LOG TABLE (Study and Break tracking)
-CREATE TABLE IF NOT EXISTS public.tracker_sessions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  subject_id UUID REFERENCES public.tracker_subjects(id) ON DELETE SET NULL,
-  session_type public.tracker_session_type NOT NULL DEFAULT 'STUDY',
-  started_at TIMESTAMPTZ NOT NULL,
-  ended_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  duration_seconds INTEGER NOT NULL DEFAULT 0 CHECK (duration_seconds >= 0),
-  rest_duration_seconds INTEGER NOT NULL DEFAULT 0 CHECK (rest_duration_seconds >= 0),
-  focus_rating INTEGER CHECK (focus_rating IS NULL OR (focus_rating >= 1 AND focus_rating <= 5)),
-  notes TEXT,
-  completed BOOLEAN NOT NULL DEFAULT true,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- 4. TRACKER PREFERENCES TABLE (Timer defaults and daily goal)
-CREATE TABLE IF NOT EXISTS public.tracker_preferences (
-  user_id UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
-  daily_goal_minutes INTEGER NOT NULL DEFAULT 180 CHECK (daily_goal_minutes > 0),
-  pomodoro_work_minutes INTEGER NOT NULL DEFAULT 25 CHECK (pomodoro_work_minutes > 0),
-  pomodoro_break_minutes INTEGER NOT NULL DEFAULT 5 CHECK (pomodoro_break_minutes > 0),
-  long_break_minutes INTEGER NOT NULL DEFAULT 15 CHECK (long_break_minutes > 0),
-  sound_enabled BOOLEAN NOT NULL DEFAULT true,
-  ambient_sound TEXT DEFAULT 'none',
-  auto_start_breaks BOOLEAN NOT NULL DEFAULT false,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

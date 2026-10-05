@@ -2,9 +2,8 @@ import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 import Home from "@/app/home/page";
 import Login from "@/app/auth/login/page";
 import Register from "@/app/auth/register/page";
-import { FEATURE_FLAGS } from "@/constants/featureFlags";
 
-// Enhanced Route configuration - Industry standard approach
+// Route configuration
 interface RouteConfig {
   path: string;
   Component: LazyExoticComponent<ComponentType> | ComponentType;
@@ -27,102 +26,37 @@ export const routes: RouteConfig[] = [
     display: true,
     Component: Login,
     requireAuth: false,
-    title: "Login",
+    title: "Login - Take Rest",
     category: "auth",
-    meta: {
-      description: "Login to your account",
-      keywords: ["login", "signin"],
-    },
   },
   {
     path: "/register",
     display: true,
     Component: Register,
     requireAuth: false,
-    title: "Register",
+    title: "Register - Take Rest",
     category: "auth",
-    meta: {
-      description: "Create a new account",
-      keywords: ["register", "signup"],
-    },
   },
 
-  // Core app routes
+  // Main Home
   {
     path: "/",
     display: true,
     Component: Home,
     requireAuth: false,
-    title: "Home",
+    title: "Home - Take Rest",
     preload: true,
     category: "main",
-    meta: { description: "Your social hub dashboard" },
-  },
-  {
-    path: "/gaming/*",
-    display: FEATURE_FLAGS.GAMING,
-    Component: lazy(() => import("../app/gaming/page")),
-    requireAuth: true,
-    title: "Gaming",
-    category: "entertainment",
-    meta: { description: "Gaming hub and competitions" },
   },
 
-  // Submit Box routes
-  {
-    path: "/submit-box",
-    display: FEATURE_FLAGS.BOX,
-    Component: lazy(() => import("../app/submit-box/index")),
-    requireAuth: false,
-    title: "Submit Box",
-    category: "education",
-    meta: { description: "Submit files to boxes" },
-  },
-  {
-    path: "/submit-box/create",
-    display: FEATURE_FLAGS.BOX,
-    Component: lazy(() => import("../app/submit-box/index")),
-    requireAuth: true,
-    title: "Create Box",
-    category: "education",
-  },
-  {
-    path: "/submit-box/submit",
-    display: FEATURE_FLAGS.BOX,
-    Component: lazy(() => import("../app/submit-box/index")),
-    requireAuth: false,
-    title: "Submit to Box",
-    category: "education",
-  },
-  {
-    path: "/submit-box/:boxId",
-    display: FEATURE_FLAGS.BOX,
-    Component: lazy(() => import("../app/submit-box/BoxDetails")),
-    requireAuth: true,
-    title: "Box Details",
-    category: "education",
-  },
-
-  // Quick Share route
-  {
-    path: "/quick-share",
-    display: FEATURE_FLAGS.QUICK_SHARE,
-    Component: lazy(() => import("../app/quick-share/index")),
-    requireAuth: false,
-    title: "Quick Share",
-    category: "education",
-    meta: { description: "Quickly share files with others" },
-  },
-
-  // Settings routes
+  // Settings
   {
     path: "/settings",
-    display: FEATURE_FLAGS.SETTINGS,
-    Component: lazy(() => import("../app/settings/page")),
+    display: true,
+    Component: lazy(() => import("@/app/settings/page")),
     requireAuth: true,
-    title: "Settings",
+    title: "Settings - Take Rest",
     category: "utility",
-    meta: { description: "Account and app settings" },
   },
 
   // 404 route
@@ -133,7 +67,6 @@ export const routes: RouteConfig[] = [
     requireAuth: false,
     title: "Page Not Found",
     category: "error",
-    meta: { description: "The page you're looking for doesn't exist" },
   },
 ];
 

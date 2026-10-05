@@ -1,37 +1,22 @@
-import CreateGamingProfile from "../gaming/create-profile/index";
-import gamingHooks from "@/hooks/useGaming";
 import authHooks from "@/hooks/useAuth";
-import { USER_TYPES } from "@/constants";
 
 const Home = () => {
   const { user, isAuthenticated } = authHooks.useUser();
-  const isTeacher = user?.user_type === USER_TYPES.TEACHER;
-
-  const { isLoading, error } = gamingHooks.useGamingProfile({
-    enabled: isAuthenticated && !isTeacher,
-  });
-
-  if (isLoading) {
-    return (
-      <div className="mx-auto my-auto flex h-52 items-center justify-center text-5xl font-medium">
-        Loading...
-      </div>
-    );
-  }
-
-  const hasNoGamingProfile = error?.response?.status === 404;
 
   return (
-    <>
-      {!isTeacher && hasNoGamingProfile && <CreateGamingProfile />}
-      <div className="relative overflow-hidden rounded-2xl bg-blue-300 p-8 font-mono shadow-lg">
-        <div className="relative z-10 flex flex-col items-center justify-center py-8 text-center">
-          <h1 className="text-4xl font-extrabold tracking-wider drop-shadow-md md:text-5xl">
-            takerest.online
-          </h1>
-        </div>
+    <div className="flex min-h-[50vh] flex-col items-center justify-center p-6 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-600 text-white shadow-xl">
+        <span className="text-2xl font-black">TR</span>
       </div>
-    </>
+      <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+        Take Rest
+      </h1>
+      <p className="mt-2 max-w-md text-sm text-gray-500">
+        {isAuthenticated
+          ? `Welcome, ${user?.full_name}! Ready to set up your tracker system.`
+          : "Clean workspace ready. Log in or configure your new features."}
+      </p>
+    </div>
   );
 };
 

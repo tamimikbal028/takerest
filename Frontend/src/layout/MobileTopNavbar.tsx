@@ -1,75 +1,53 @@
 import { NavLink } from "react-router-dom";
-import { FaHome, FaTrophy, FaComments, FaCog, FaBars } from "react-icons/fa";
-import authHooks from "@/hooks/useAuth";
-import { FEATURE_FLAGS as flags, USER_TYPES } from "@/constants";
+import { Menu, LayoutDashboard, Settings } from "lucide-react";
 
 interface MobileTopNavbarProps {
   onToggleSidebar: () => void;
 }
 
 const MobileTopNavbar = ({ onToggleSidebar }: MobileTopNavbarProps) => {
-  const { user } = authHooks.useUser();
-
   const navItems = [
     {
       to: "/",
-      icon: FaHome,
+      icon: LayoutDashboard,
       label: "Home",
-      display: flags.HOME,
-    },
-    {
-      to: "/gaming",
-      icon: FaTrophy,
-      label: "Competition",
-      display: flags.GAMING && user?.user_type !== USER_TYPES.TEACHER,
-    },
-    {
-      to: "/open-discussion",
-      icon: FaComments,
-      label: "Discussion",
-      display: flags.OPEN_DISCUSSION,
     },
     {
       to: "/settings",
-      icon: FaCog,
+      icon: Settings,
       label: "Settings",
-      display: flags.SETTINGS,
     },
   ];
 
-  const displayNavItems = navItems.filter((item) => item.display);
-
   return (
-    <nav className="flex h-14 w-full items-center justify-around border-b border-gray-200 bg-white shadow-sm">
-      {/* Menu / Hamburger Button to toggle sidebar */}
+    <nav className="flex h-14 w-full items-center justify-around border-b border-gray-100 bg-white/95 px-1 shadow-xs backdrop-blur-md">
+      {/* Menu / Hamburger Button */}
       <button
         onClick={onToggleSidebar}
-        className="flex cursor-pointer flex-col items-center gap-0.5 px-3 py-1 text-gray-500 transition-all hover:text-blue-500 active:scale-95"
+        className="flex cursor-pointer flex-col items-center gap-0.5 px-2 py-1 text-gray-500 transition-all hover:text-blue-600 active:scale-95"
         aria-label="Open menu"
       >
-        <FaBars className="h-5 w-5" />
+        <Menu className="h-4 w-4" />
         <span className="text-[10px] font-medium">Menu</span>
       </button>
 
-      {displayNavItems.map(({ to, icon: Icon, label }) => {
-        return (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === "/"}
-            className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 px-3 py-1 transition-colors ${
-                isActive
-                  ? "font-semibold text-blue-600"
-                  : "text-gray-500 hover:text-blue-500"
-              }`
-            }
-          >
-            <Icon className="h-5 w-5" />
-            <span className="text-[10px] font-medium">{label}</span>
-          </NavLink>
-        );
-      })}
+      {navItems.map(({ to, icon: Icon, label }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={to === "/"}
+          className={({ isActive }) =>
+            `flex flex-col items-center gap-0.5 px-2 py-1 transition-colors ${
+              isActive
+                ? "font-bold text-blue-600"
+                : "text-gray-500 hover:text-blue-500"
+            }`
+          }
+        >
+          <Icon className="h-4 w-4" />
+          <span className="text-[10px] font-medium">{label}</span>
+        </NavLink>
+      ))}
     </nav>
   );
 };

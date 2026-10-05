@@ -5,7 +5,6 @@ import app from "./app.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import quickShareService from "./services/quickShare.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,15 +24,6 @@ if (fs.existsSync(tempDir)) {
     }
   });
 }
-
-// Clean up expired Quick Shares on startup and schedule every 1 hour
-quickShareService.cleanupExpiredShares();
-setInterval(
-  () => {
-    quickShareService.cleanupExpiredShares();
-  },
-  1 * 60 * 60 * 1000
-);
 
 const PORT = process.env.PORT || 8000;
 

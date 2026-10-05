@@ -1,7 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { FaCog, FaTrophy, FaUpload, FaShareAlt } from "react-icons/fa";
+import { LayoutDashboard, Settings, User } from "lucide-react";
 import authHooks from "@/hooks/useAuth";
-import { FEATURE_FLAGS as flags, USER_TYPES } from "@/constants";
 
 interface SidebarProps {
   onClose?: () => void;
@@ -9,86 +8,102 @@ interface SidebarProps {
 
 const Sidebar = ({ onClose }: SidebarProps) => {
   const location = useLocation();
-  const { user } = authHooks.useUser();
+  const { user, isAuthenticated } = authHooks.useUser();
 
   const navigationItems = [
     {
-      icon: FaTrophy,
-      display: flags.GAMING && user?.user_type !== USER_TYPES.TEACHER,
-      label: "Gaming",
-      path: "/gaming",
-      active: location.pathname.startsWith("/gaming"),
+      icon: LayoutDashboard,
+      label: "Home",
+      path: "/",
+      active: location.pathname === "/",
     },
     {
-      icon: FaUpload,
-      display: flags.BOX,
-      label: "Submit Box",
-      path: "/submit-box",
-      active: location.pathname.startsWith("/submit-box"),
-    },
-    {
-      icon: FaShareAlt,
-      display: flags.QUICK_SHARE,
-      label: "Quick Share",
-      path: "/quick-share",
-      active: location.pathname.startsWith("/quick-share"),
-    },
-    {
-      icon: FaCog,
-      display: flags.SETTINGS,
+      icon: Settings,
       label: "Settings",
       path: "/settings",
       active: location.pathname.startsWith("/settings"),
     },
   ];
 
-  const displayNavItems = navigationItems.filter((item) => item.display);
-
   return (
-    <div className="flex h-full flex-col space-y-1 p-3">
-      {/* Logo/Brand - Click to go Home */}
-      <NavLink
-        to="/"
-        onClick={onClose}
-        className="flex items-center gap-3 border-b border-gray-300 px-2 pb-3"
-      >
-        <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-linear-to-br from-blue-400 to-blue-700 shadow-md">
-          <span className="text-2xl font-bold text-white">TR</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-lg font-semibold text-gray-900">Take Rest</span>
-          <span className="text-sm text-gray-500">Connect & Play</span>
-        </div>
-      </NavLink>
+    <div className="flex h-full flex-col justify-between p-4">
+      <div className="space-y-6">
+        {/* Brand / Logo */}
+        <NavLink
+          to="/"
+          onClick={onClose}
+          className="flex items-center gap-3 px-2 py-1"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md">
+            <span className="text-xl font-extrabold tracking-tight">TR</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-base font-bold tracking-tight text-gray-900">
+              Take Rest
+            </span>
+            <span className="text-xs font-medium text-gray-400">
+              Workspace
+            </span>
+          </div>
+        </NavLink>
 
-      {/* Navigation Menu */}
-      <div className="hide-scrollbar flex-1 overflow-y-auto">
-        <nav className="space-y-1">
-          {displayNavItems.map((item, index) => (
-            <NavLink
-              key={index}
-              to={item.path || "#"}
-              onClick={onClose}
-              className={`flex items-center justify-between rounded-xl px-4 py-3 text-base font-medium transition-all duration-200 ${
-                item.active
-                  ? "bg-blue-50 font-semibold text-blue-600"
-                  : "text-gray-700 hover:bg-blue-100 hover:text-gray-900"
-              }`}
-            >
-              <div className="flex items-center">
-                <item.icon
-                  className={`mr-3 h-5 w-5 transition-colors ${
-                    item.active
-                      ? "text-blue-600"
-                      : "text-gray-500 group-hover:text-gray-900"
+        {/* Navigation Links */}
+        <nav className="space-y-1.5">
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={onClose}
+                className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all duration-150 ${
+                  item.active
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                }`}
+              >
+                <Icon
+                  className={`h-4 w-4 ${
+                    item.active ? "text-white" : "text-gray-400"
                   }`}
                 />
                 <span>{item.label}</span>
-              </div>
-            </NavLink>
-          ))}
+              </NavLink>
+            );
+          })}
         </nav>
       </div>
+
+      {/* User Footer Profile */}
+      {isAuthenticated && user && (
+        <div className="border-t border-gray-100 pt-3">
+          <NavLink
+            to="/settings"
+            onClick={onClose}
+            className="flex items-center gap-3 rounded-xl p-2 transition hover:bg-gray-100"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+              {user.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.full_name}
+                  className="h-full w-full rounded-xl object-cover"
+                />
+              ) : (
+                <User className="h-4 w-4" />
+              )}
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-xs font-bold text-gray-900">
+                {user.full_name}
+              </span>
+              <span className="truncate text-[10px] text-gray-400">
+                @{user.user_name}
+              </span>
+            </div>
+          </NavLink>
+        </div>
+      )}
     </div>
   );
 };
