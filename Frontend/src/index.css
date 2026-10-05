@@ -28,3 +28,16 @@
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+/* Full-cover date picker indicator for Chrome/Edge/Safari */
+.full-date-picker-overlay::-webkit-calendar-picker-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}

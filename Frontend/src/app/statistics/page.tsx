@@ -12,22 +12,31 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
+const getLocalDateString = (d: Date = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export const StatisticsPage = () => {
-  // Date state: YYYY-MM-DD
-  const todayStr = new Date().toISOString().split("T")[0];
+  // Local date state: YYYY-MM-DD
+  const todayStr = getLocalDateString();
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
 
-  const { summary, isLoading, isError } = trackerHooks.useDaySummary(selectedDate);
+  const { summary, isLoading, isError } =
+    trackerHooks.useDaySummary(selectedDate);
   const { categories } = trackerHooks.useCategories();
 
   // Selected Category ID for Single Category Activity Breakdown
   const [selectedCatId, setSelectedCatId] = useState<string>("");
 
-  // Helper date shift
+  // Helper date shift using local date components
   const handleShiftDate = (days: number) => {
-    const current = new Date(selectedDate);
-    current.setDate(current.getDate() + days);
-    setSelectedDate(current.toISOString().split("T")[0]);
+    const [y, m, d] = selectedDate.split("-").map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    dateObj.setDate(dateObj.getDate() + days);
+    setSelectedDate(getLocalDateString(dateObj));
   };
 
   const isToday = selectedDate === todayStr;
@@ -47,10 +56,7 @@ export const StatisticsPage = () => {
 
   // Active or selected category for single category activity drill-down
   const activeCategoryId =
-    selectedCatId ||
-    categoryBreakdown[0]?.id ||
-    categories[0]?.id ||
-    "";
+    selectedCatId || categoryBreakdown[0]?.id || categories[0]?.id || "";
 
   // Find the selected category breakdown
   const selectedCategoryData = categoryBreakdown.find(
@@ -62,42 +68,42 @@ export const StatisticsPage = () => {
     selectedCategoryData || categories.find((c) => c.id === activeCategoryId);
 
   // Format date display (e.g., "Monday, Oct 6, 2026")
-  const formattedDateTitle = new Date(`${selectedDate}T00:00:00`).toLocaleDateString(
-    undefined,
-    {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }
-  );
+  const [yearNum, monthNum, dayNum] = selectedDate.split("-").map(Number);
+  const formattedDateTitle = new Date(
+    yearNum,
+    monthNum - 1,
+    dayNum
+  ).toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 
   // Find top category
   const topCategory = categoryBreakdown[0];
 
   return (
-    <div className="space-y-8 pb-16">
+    <div className="space-y-5">
       {/* 1. Header & Date Controller */}
       <div className="flex flex-col justify-between gap-4 rounded-3xl border border-gray-200 bg-white p-6 shadow-xs sm:flex-row sm:items-center">
         <div>
           <div className="flex items-center gap-2 text-purple-600">
             <BarChart3 className="h-5 w-5" />
-            <span className="text-xs font-bold uppercase tracking-wider text-purple-700">
+            <span className="text-xs font-bold tracking-wider text-purple-700 uppercase">
               Analytics & Insights
             </span>
           </div>
           <h1 className="mt-1 text-2xl font-black tracking-tight text-gray-900 sm:text-3xl">
             Time & Activity Statistics
           </h1>
-          <p className="mt-0.5 text-xs font-medium text-gray-500">
-            Detailed breakdown by Categories and individual Activities
-          </p>
         </div>
 
         {/* Date Selector */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center rounded-2xl border border-gray-200 bg-gray-50 p-1 shadow-2xs">
             <button
+              type="button"
               onClick={() => handleShiftDate(-1)}
               title="Previous Day"
               className="cursor-pointer rounded-xl p-2 text-gray-600 transition hover:bg-white hover:text-gray-900 active:scale-95"
@@ -105,12 +111,41 @@ export const StatisticsPage = () => {
               <ChevronLeft className="h-4 w-4" />
             </button>
 
-            <div className="flex items-center gap-1.5 px-3 py-1 font-mono text-xs font-bold text-gray-800">
-              <Calendar className="h-3.5 w-3.5 text-purple-600" />
-              <span>{formattedDateTitle}</span>
+            {/* Clickable Middle Date with completely invisible overlay input */}
+            <div className="group relative flex items-center rounded-xl transition hover:bg-white">
+              <div className="flex cursor-pointer items-center gap-2 px-3 py-1.5 font-mono text-xs font-bold text-gray-800 transition group-hover:text-purple-700">
+                <Calendar className="h-3.5 w-3.5 text-purple-600" />
+                <span>{formattedDateTitle}</span>
+              </div>
+              <input
+                type="date"
+                value={selectedDate}
+                max={todayStr}
+                onClick={(e) => {
+                  try {
+                    e.currentTarget.showPicker();
+                  } catch {
+                    // Fallback if showPicker is unsupported
+                  }
+                }}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setSelectedDate(e.target.value);
+                  }
+                }}
+                className="full-date-picker-overlay absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                style={{
+                  opacity: 0,
+                  cursor: "pointer",
+                  width: "100%",
+                  height: "100%",
+                }}
+                title="Click to select date"
+              />
             </div>
 
             <button
+              type="button"
               onClick={() => handleShiftDate(1)}
               disabled={isToday}
               title="Next Day"
@@ -122,20 +157,13 @@ export const StatisticsPage = () => {
 
           {!isToday && (
             <button
+              type="button"
               onClick={() => setSelectedDate(todayStr)}
               className="cursor-pointer rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700 transition hover:bg-purple-100 active:scale-95"
             >
               Today
             </button>
           )}
-
-          <input
-            type="date"
-            value={selectedDate}
-            max={todayStr}
-            onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-            className="rounded-xl border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 focus:border-purple-500 focus:outline-hidden"
-          />
         </div>
       </div>
 
@@ -157,7 +185,7 @@ export const StatisticsPage = () => {
             {/* Total Tracked Time */}
             <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-xs">
               <div className="flex items-center justify-between text-blue-600">
-                <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                <span className="text-xs font-bold tracking-wider text-gray-500 uppercase">
                   Total Tracked
                 </span>
                 <Clock className="h-4 w-4" />
@@ -178,7 +206,7 @@ export const StatisticsPage = () => {
             {/* Total Sessions */}
             <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-xs">
               <div className="flex items-center justify-between text-emerald-600">
-                <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                <span className="text-xs font-bold tracking-wider text-gray-500 uppercase">
                   Total Sessions
                 </span>
                 <CheckCircle2 className="h-4 w-4" />
@@ -199,7 +227,7 @@ export const StatisticsPage = () => {
             {/* Active Categories Count */}
             <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-xs">
               <div className="flex items-center justify-between text-purple-600">
-                <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                <span className="text-xs font-bold tracking-wider text-gray-500 uppercase">
                   Active Categories
                 </span>
                 <PieChart className="h-4 w-4" />
@@ -220,7 +248,7 @@ export const StatisticsPage = () => {
             {/* Top Category */}
             <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-xs">
               <div className="flex items-center justify-between text-amber-600">
-                <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                <span className="text-xs font-bold tracking-wider text-gray-500 uppercase">
                   Top Focus Area
                 </span>
                 <Layers className="h-4 w-4" />
@@ -263,7 +291,7 @@ export const StatisticsPage = () => {
                       backgroundColor: cat.color,
                     }}
                     title={`${cat.name}: ${cat.hours}h (${cat.percentage}%)`}
-                    className="h-full first:rounded-l-full last:rounded-r-full transition-all duration-300 hover:opacity-90"
+                    className="h-full transition-all duration-300 first:rounded-l-full last:rounded-r-full hover:opacity-90"
                   />
                 ))}
               </div>
@@ -302,7 +330,8 @@ export const StatisticsPage = () => {
                   </h2>
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
-                  Total time distribution across all your categories for {formattedDateTitle}
+                  Total time distribution across all your categories for{" "}
+                  {formattedDateTitle}
                 </p>
               </div>
               <span className="text-xs font-semibold text-gray-400">
@@ -372,7 +401,9 @@ export const StatisticsPage = () => {
                         </div>
 
                         <p className="mt-2 text-[11px] font-medium text-gray-400">
-                          {cat.logsCount} {cat.logsCount === 1 ? "session" : "sessions"} recorded
+                          {cat.logsCount}{" "}
+                          {cat.logsCount === 1 ? "session" : "sessions"}{" "}
+                          recorded
                         </p>
                       </div>
 
@@ -381,7 +412,9 @@ export const StatisticsPage = () => {
                         onClick={() => {
                           setSelectedCatId(cat.id);
                           // Scroll smoothly to section 2
-                          const el = document.getElementById("activity-breakdown-section");
+                          const el = document.getElementById(
+                            "activity-breakdown-section"
+                          );
                           el?.scrollIntoView({ behavior: "smooth" });
                         }}
                         className={`mt-4 inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition active:scale-95 ${
@@ -390,7 +423,11 @@ export const StatisticsPage = () => {
                             : "border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
                         }`}
                       >
-                        <span>{isSelected ? "Inspecting Activities" : "Inspect Activities"}</span>
+                        <span>
+                          {isSelected
+                            ? "Inspecting Activities"
+                            : "Inspect Activities"}
+                        </span>
                         <ArrowRight className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -416,7 +453,8 @@ export const StatisticsPage = () => {
                   </h2>
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
-                  Select a category to inspect the time spent on each individual activity
+                  Select a category to inspect the time spent on each individual
+                  activity
                 </p>
               </div>
 
@@ -459,7 +497,7 @@ export const StatisticsPage = () => {
                         {selectedCategoryInfo.name}
                       </h3>
                       <span
-                        className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white"
+                        className="rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider text-white uppercase"
                         style={{ backgroundColor: selectedCategoryInfo.color }}
                       >
                         Category
@@ -468,29 +506,37 @@ export const StatisticsPage = () => {
                     <p className="text-xs text-gray-500">
                       Total Category Time:{" "}
                       <span className="font-bold text-gray-900">
-                        {formatHoursMins(selectedCategoryData?.durationSeconds ?? 0)}
+                        {formatHoursMins(
+                          selectedCategoryData?.durationSeconds ?? 0
+                        )}
                       </span>{" "}
-                      ({selectedCategoryData?.percentage ?? 0}% of today's total tracked time)
+                      ({selectedCategoryData?.percentage ?? 0}% of today's total
+                      tracked time)
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-gray-500">
-                    {(selectedCategoryData?.activities || []).length} tracked activities
+                    {(selectedCategoryData?.activities || []).length} tracked
+                    activities
                   </span>
                 </div>
               </div>
             )}
 
             {/* Activities Breakdown Cards / List */}
-            {(!selectedCategoryData || (selectedCategoryData.activities || []).length === 0) ? (
+            {!selectedCategoryData ||
+            (selectedCategoryData.activities || []).length === 0 ? (
               <div className="py-12 text-center">
                 <p className="text-sm font-semibold text-gray-700">
-                  No activity logs recorded under "{selectedCategoryInfo?.name || "this category"}" on {formattedDateTitle}.
+                  No activity logs recorded under "
+                  {selectedCategoryInfo?.name || "this category"}" on{" "}
+                  {formattedDateTitle}.
                 </p>
                 <p className="mt-1 text-xs text-gray-400">
-                  Select another category or start a timer session on Home to log activities here.
+                  Select another category or start a timer session on Home to
+                  log activities here.
                 </p>
               </div>
             ) : (
@@ -513,7 +559,8 @@ export const StatisticsPage = () => {
                               {act.name}
                             </span>
                             <span className="ml-2 text-xs font-medium text-gray-400">
-                              {act.logsCount} {act.logsCount === 1 ? "session" : "sessions"}
+                              {act.logsCount}{" "}
+                              {act.logsCount === 1 ? "session" : "sessions"}
                             </span>
                           </div>
                         </div>
