@@ -1,7 +1,6 @@
 import { useState } from "react";
 import trackerHooks from "@/hooks/useTracker";
 import {
-  BarChart3,
   Calendar,
   ChevronLeft,
   ChevronRight,
@@ -85,84 +84,134 @@ export const StatisticsPage = () => {
 
   return (
     <div className="space-y-5">
-      {/* 1. Header & Date Controller */}
-      <div className="flex flex-col justify-between gap-4 rounded-3xl border border-gray-200 bg-white p-6 shadow-xs sm:flex-row sm:items-center">
-        <div>
-          <div className="flex items-center gap-2 text-purple-600">
-            <BarChart3 className="h-5 w-5" />
-            <span className="text-xs font-bold tracking-wider text-purple-700 uppercase">
-              Analytics & Insights
-            </span>
-          </div>
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-gray-900 sm:text-3xl">
-            Time & Activity Statistics
-          </h1>
-        </div>
+      {/* 1. Header Card: Date Controller & Day Overview Bar */}
+      <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-xs sm:p-6">
+        <h1 className="sr-only">Time & Activity Statistics - {formattedDateTitle}</h1>
 
-        {/* Date Selector */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center rounded-2xl border border-gray-200 bg-gray-50 p-1 shadow-2xs">
-            <button
-              type="button"
-              onClick={() => handleShiftDate(-1)}
-              title="Previous Day"
-              className="cursor-pointer rounded-xl p-2 text-gray-600 transition hover:bg-white hover:text-gray-900 active:scale-95"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
+        {/* Date Selector Row */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center rounded-2xl border border-gray-200 bg-gray-50 p-1 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => handleShiftDate(-1)}
+                title="Previous Day"
+                className="cursor-pointer rounded-xl p-2 text-gray-600 transition hover:bg-white hover:text-gray-900 active:scale-95"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
 
-            {/* Clickable Middle Date with completely invisible overlay input */}
-            <div className="group relative flex items-center rounded-xl transition hover:bg-white">
-              <div className="flex cursor-pointer items-center gap-2 px-3 py-1.5 font-mono text-xs font-bold text-gray-800 transition group-hover:text-purple-700">
-                <Calendar className="h-3.5 w-3.5 text-purple-600" />
-                <span>{formattedDateTitle}</span>
+              {/* Clickable Middle Date with completely invisible overlay input */}
+              <div className="group relative flex items-center rounded-xl transition hover:bg-white">
+                <div className="flex cursor-pointer items-center gap-2 px-3 py-1.5 font-mono text-xs font-bold text-gray-800 transition group-hover:text-purple-700 sm:px-3.5 sm:text-sm">
+                  <Calendar className="h-4 w-4 text-purple-600" />
+                  <span>{formattedDateTitle}</span>
+                </div>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  max={todayStr}
+                  onClick={(e) => {
+                    try {
+                      e.currentTarget.showPicker();
+                    } catch {
+                      // Fallback if showPicker is unsupported
+                    }
+                  }}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setSelectedDate(e.target.value);
+                    }
+                  }}
+                  className="full-date-picker-overlay absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  style={{
+                    opacity: 0,
+                    cursor: "pointer",
+                    width: "100%",
+                    height: "100%",
+                  }}
+                  title="Click to select date"
+                />
               </div>
-              <input
-                type="date"
-                value={selectedDate}
-                max={todayStr}
-                onClick={(e) => {
-                  try {
-                    e.currentTarget.showPicker();
-                  } catch {
-                    // Fallback if showPicker is unsupported
-                  }
-                }}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    setSelectedDate(e.target.value);
-                  }
-                }}
-                className="full-date-picker-overlay absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                style={{
-                  opacity: 0,
-                  cursor: "pointer",
-                  width: "100%",
-                  height: "100%",
-                }}
-                title="Click to select date"
-              />
+
+              <button
+                type="button"
+                onClick={() => handleShiftDate(1)}
+                disabled={isToday}
+                title="Next Day"
+                className="cursor-pointer rounded-xl p-2 text-gray-600 transition hover:bg-white hover:text-gray-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => handleShiftDate(1)}
-              disabled={isToday}
-              title="Next Day"
-              className="cursor-pointer rounded-xl p-2 text-gray-600 transition hover:bg-white hover:text-gray-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
+            {!isToday && (
+              <button
+                type="button"
+                onClick={() => setSelectedDate(todayStr)}
+                className="cursor-pointer rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700 transition hover:bg-purple-100 active:scale-95"
+              >
+                Today
+              </button>
+            )}
           </div>
 
-          {!isToday && (
-            <button
-              type="button"
-              onClick={() => setSelectedDate(todayStr)}
-              className="cursor-pointer rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700 transition hover:bg-purple-100 active:scale-95"
-            >
-              Today
-            </button>
+          {/* Quick status on the right */}
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span className="font-medium">Total Tracked:</span>
+            <span className="font-mono text-sm font-bold text-gray-900">
+              {formatHoursMins(totalTrackedSeconds)}
+            </span>
+          </div>
+        </div>
+
+        {/* Day Overview Bar */}
+        <div className="mt-4 border-t border-gray-100 pt-4">
+          {isLoading ? (
+            <div className="h-5 w-full animate-pulse rounded-full bg-gray-100" />
+          ) : totalTrackedSeconds > 0 ? (
+            <div className="space-y-3">
+              {/* Progress track */}
+              <div className="flex h-5 w-full overflow-hidden rounded-full bg-gray-100 p-0.5 shadow-inner">
+                {categoryBreakdown.map((cat) => (
+                  <div
+                    key={cat.id}
+                    style={{
+                      width: `${cat.percentage}%`,
+                      backgroundColor: cat.color,
+                    }}
+                    title={`${cat.name}: ${cat.hours}h (${cat.percentage}%)`}
+                    className="h-full transition-all duration-300 first:rounded-l-full last:rounded-r-full hover:opacity-90"
+                  />
+                ))}
+              </div>
+
+              {/* Legend pills */}
+              <div className="flex flex-wrap gap-2">
+                {categoryBreakdown.map((cat) => (
+                  <div
+                    key={cat.id}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-800 transition hover:border-gray-300"
+                  >
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: cat.color }}
+                    />
+                    <span>{cat.name}</span>
+                    <span className="font-bold text-gray-500">
+                      {cat.percentage}%
+                    </span>
+                    <span className="text-[10px] text-gray-400">
+                      ({formatHoursMins(cat.durationSeconds)})
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex h-11 w-full items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 text-xs text-gray-400">
+              No activity recorded for {formattedDateTitle}
+            </div>
           )}
         </div>
       </div>
@@ -266,56 +315,6 @@ export const StatisticsPage = () => {
             </div>
           </div>
 
-          {/* 3. Proportional Day Distribution Bar */}
-          {totalTrackedSeconds > 0 && (
-            <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs">
-              <div className="flex items-center justify-between pb-3">
-                <div className="flex items-center gap-2">
-                  <PieChart className="h-4 w-4 text-purple-600" />
-                  <h3 className="text-sm font-bold text-gray-900">
-                    Day Proportion Overview
-                  </h3>
-                </div>
-                <span className="text-xs font-medium text-gray-500">
-                  100% of tracked time ({formatHoursMins(totalTrackedSeconds)})
-                </span>
-              </div>
-
-              {/* Progress track */}
-              <div className="flex h-5 w-full overflow-hidden rounded-full bg-gray-100 p-0.5">
-                {categoryBreakdown.map((cat) => (
-                  <div
-                    key={cat.id}
-                    style={{
-                      width: `${cat.percentage}%`,
-                      backgroundColor: cat.color,
-                    }}
-                    title={`${cat.name}: ${cat.hours}h (${cat.percentage}%)`}
-                    className="h-full transition-all duration-300 first:rounded-l-full last:rounded-r-full hover:opacity-90"
-                  />
-                ))}
-              </div>
-
-              {/* Legend pills */}
-              <div className="mt-4 flex flex-wrap gap-2">
-                {categoryBreakdown.map((cat) => (
-                  <div
-                    key={cat.id}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-800"
-                  >
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: cat.color }}
-                    />
-                    <span>{cat.name}</span>
-                    <span className="font-bold text-gray-500">
-                      {cat.percentage}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* 4. SECTION 1: CATEGORY-WISE STATS */}
           <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xs sm:p-8">
