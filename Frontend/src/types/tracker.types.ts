@@ -32,7 +32,7 @@ export interface TimeLog {
   started_at: string;
   ended_at: string;
   duration_seconds: number;
-  is_wasted: boolean;
+  is_wasted?: boolean;
   notes?: string | null;
   created_at: string;
   categories?: {
@@ -71,6 +71,16 @@ export interface ActiveTimer {
   } | null;
 }
 
+export interface ActivityBreakdown {
+  id: string;
+  name: string;
+  durationSeconds: number;
+  minutes: number;
+  hours: number;
+  percentage: number;
+  logsCount: number;
+}
+
 export interface CategoryBreakdown {
   id: string;
   name: string;
@@ -80,6 +90,7 @@ export interface CategoryBreakdown {
   hours: number;
   percentage: number;
   logsCount: number;
+  activities?: ActivityBreakdown[];
 }
 
 export interface DaySummary {
@@ -87,8 +98,6 @@ export interface DaySummary {
   totalTrackedSeconds: number;
   totalTrackedMinutes: number;
   totalTrackedHours: number;
-  totalWastedSeconds: number;
-  totalWastedMinutes: number;
-  totalWastedHours: number;
+  totalLogsCount?: number;
   categoryBreakdown: CategoryBreakdown[];
 }

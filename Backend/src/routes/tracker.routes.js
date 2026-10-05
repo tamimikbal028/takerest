@@ -26,8 +26,10 @@ trackerRouter
   .put(trackerControllers.updateActivity)
   .delete(trackerControllers.deleteActivity);
 
-// 3. Continuous Active Timer
+// 3. Active Timer
 trackerRouter.route("/timer/active").get(trackerControllers.getActiveTimer);
+trackerRouter.route("/timer/start").post(trackerControllers.startTimer);
+trackerRouter.route("/timer/stop").post(trackerControllers.stopTimer);
 trackerRouter.route("/timer/save-chunk").post(trackerControllers.saveChunk);
 trackerRouter.route("/timer/switch").post(trackerControllers.switchTimer);
 

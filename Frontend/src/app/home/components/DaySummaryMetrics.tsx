@@ -1,4 +1,4 @@
-import { Clock, AlertTriangle, CheckCircle, PieChart } from "lucide-react";
+import { Clock, Layers, CheckCircle2, PieChart } from "lucide-react";
 import type { DaySummary } from "@/types";
 
 interface DaySummaryMetricsProps {
@@ -7,8 +7,6 @@ interface DaySummaryMetricsProps {
 
 export const DaySummaryMetrics = ({ summary }: DaySummaryMetricsProps) => {
   const totalTrackedSeconds = summary?.totalTrackedSeconds ?? 0;
-  const totalWastedSeconds = summary?.totalWastedSeconds ?? 0;
-  const productiveSeconds = Math.max(0, totalTrackedSeconds - totalWastedSeconds);
 
   const formatHoursMins = (secs: number) => {
     const hrs = Math.floor(secs / 3600);
@@ -17,12 +15,15 @@ export const DaySummaryMetrics = ({ summary }: DaySummaryMetricsProps) => {
     return `${hrs}h ${mins}m`;
   };
 
-  const wastedPercentage =
-    totalTrackedSeconds > 0
-      ? Math.round((totalWastedSeconds / totalTrackedSeconds) * 100)
-      : 0;
+  const trackedPercentOf24h = Math.min(
+    100,
+    Math.round((totalTrackedSeconds / 86400) * 100)
+  );
 
   const categoryBreakdown = summary?.categoryBreakdown ?? [];
+  const totalSessions =
+    summary?.totalLogsCount ??
+    categoryBreakdown.reduce((acc, c) => acc + (c.logsCount || 0), 0);
 
   return (
     <div className="space-y-4">
@@ -42,51 +43,56 @@ export const DaySummaryMetrics = ({ summary }: DaySummaryMetricsProps) => {
             </span>
             <span className="text-xs font-medium text-gray-400">/ 24h</span>
           </div>
-          <p className="mt-1 text-[11px] font-medium text-gray-500">Continuous day coverage</p>
-        </div>
-
-        {/* Productive / Useful Time */}
-        <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-xs">
-          <div className="flex items-center justify-between text-emerald-600">
-            <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
-              Useful & Routine
-            </span>
-            <CheckCircle className="h-4 w-4" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-3xl font-black text-gray-900">
-              {formatHoursMins(productiveSeconds)}
-            </span>
-          </div>
           <p className="mt-1 text-[11px] font-medium text-gray-500">
             {totalTrackedSeconds > 0
-              ? `${100 - wastedPercentage}% of your day`
-              : "No logs yet"}
+              ? `${trackedPercentOf24h}% of your 24h day covered`
+              : "No time logged today yet"}
           </p>
         </div>
 
-        {/* Wasted Time Card (Highlights time waste per user requirement!) */}
-        <div className="rounded-3xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50/80 p-5 shadow-xs">
-          <div className="flex items-center justify-between text-amber-700">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-amber-900">
-              Wasted Time Today
+        {/* Completed Sessions */}
+        <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-xs">
+          <div className="flex items-center justify-between text-emerald-600">
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+              Recorded Sessions
             </span>
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <CheckCircle2 className="h-4 w-4" />
           </div>
           <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-3xl font-black text-amber-950">
-              {formatHoursMins(totalWastedSeconds)}
+            <span className="text-3xl font-black text-gray-900">
+              {totalSessions}
             </span>
-            {totalWastedSeconds > 0 && (
-              <span className="text-xs font-bold text-amber-700">
-                ({wastedPercentage}%)
-              </span>
-            )}
+            <span className="text-xs font-medium text-gray-400">
+              {totalSessions === 1 ? "session" : "sessions"}
+            </span>
           </div>
-          <p className="mt-1 text-[11px] font-medium text-amber-900">
-            {totalWastedSeconds > 0
-              ? "Awareness is the first step to reclaiming time"
-              : "0 minutes wasted! Perfect focus so far"}
+          <p className="mt-1 text-[11px] font-medium text-gray-500">
+            {totalSessions > 0
+              ? "Completed time intervals"
+              : "Start timer to record sessions"}
+          </p>
+        </div>
+
+        {/* Categories Active */}
+        <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-xs">
+          <div className="flex items-center justify-between text-purple-600">
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+              Active Categories
+            </span>
+            <Layers className="h-4 w-4" />
+          </div>
+          <div className="mt-2 flex items-baseline gap-1.5">
+            <span className="text-3xl font-black text-gray-900">
+              {categoryBreakdown.length}
+            </span>
+            <span className="text-xs font-medium text-gray-400">
+              {categoryBreakdown.length === 1 ? "category" : "categories"}
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] font-medium text-gray-500">
+            {categoryBreakdown.length > 0
+              ? "Different focus areas today"
+              : "No categories recorded yet"}
           </p>
         </div>
       </div>
@@ -96,7 +102,7 @@ export const DaySummaryMetrics = ({ summary }: DaySummaryMetricsProps) => {
         <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 p-3">
           <div className="flex items-center gap-1.5 pr-2 text-xs font-bold text-gray-600">
             <PieChart className="h-3.5 w-3.5" />
-            <span>Groups:</span>
+            <span>Categories:</span>
           </div>
           {categoryBreakdown.map((cat) => (
             <div

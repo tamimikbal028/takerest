@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 2. CATEGORIES / GROUPS TABLE (Deen, Academic, Others, etc.)
+-- 2. CATEGORIES TABLE (Deen, Academic, Others, etc.)
 CREATE TABLE IF NOT EXISTS public.categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS public.activities (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 4. TIME LOGS TABLE (Continuous 24h recorded segments)
+-- 4. TIME LOGS TABLE (Recorded segments)
 CREATE TABLE IF NOT EXISTS public.time_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -65,13 +65,13 @@ CREATE TABLE IF NOT EXISTS public.time_logs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 5. ACTIVE TIMER STATE TABLE (Continuous live timer)
+-- 5. ACTIVE TIMER STATE TABLE (Timer state)
 CREATE TABLE IF NOT EXISTS public.active_timer (
   user_id UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
   category_id UUID REFERENCES public.categories(id) ON DELETE SET NULL,
   activity_id UUID REFERENCES public.activities(id) ON DELETE SET NULL,
   title TEXT NOT NULL DEFAULT 'Others',
   started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  is_running BOOLEAN NOT NULL DEFAULT true,
+  is_running BOOLEAN NOT NULL DEFAULT false,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

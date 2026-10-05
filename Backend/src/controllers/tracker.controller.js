@@ -151,6 +151,40 @@ const switchTimer = AsyncHandler(async (req, res) => {
     );
 });
 
+const startTimer = AsyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const startData = req.body;
+  const { activeTimer, meta } =
+    await trackerServices.startTimerService(userId, startData);
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { activeTimer, meta },
+        "Timer started successfully"
+      )
+    );
+});
+
+const stopTimer = AsyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const stopData = req.body;
+  const { savedLog, activeTimer, meta } =
+    await trackerServices.stopTimerService(userId, stopData);
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { savedLog, activeTimer, meta },
+        "Timer stopped and log saved successfully"
+      )
+    );
+});
+
 // 4. Daily Summary & Logs
 const getTodaySummary = AsyncHandler(async (req, res) => {
   const userId = req.user.id;
@@ -191,6 +225,8 @@ const trackerControllers = {
   updateActivity,
   deleteActivity,
   getActiveTimer,
+  startTimer,
+  stopTimer,
   saveChunk,
   switchTimer,
   getTodaySummary,

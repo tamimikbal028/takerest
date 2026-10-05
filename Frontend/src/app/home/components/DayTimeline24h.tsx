@@ -1,4 +1,4 @@
-import { AlertTriangle, Trash2, Calendar } from "lucide-react";
+import { Trash2, Calendar } from "lucide-react";
 import trackerHooks from "@/hooks/useTracker";
 import type { TimeLog } from "@/types";
 
@@ -63,9 +63,7 @@ export const DayTimeline24h = ({ logs }: DayTimeline24hProps) => {
               log.started_at,
               log.ended_at
             );
-            const color = log.is_wasted
-              ? "#F59E0B" // Amber warning color for wasted time
-              : log.categories?.color || "#3B82F6";
+            const color = log.categories?.color || "#3B82F6";
 
             return (
               <div
@@ -76,9 +74,7 @@ export const DayTimeline24h = ({ logs }: DayTimeline24hProps) => {
                   width: `${widthPercent}%`,
                   backgroundColor: color,
                 }}
-                title={`${log.title} (${formatHoursMins(log.duration_seconds)})${
-                  log.is_wasted ? " • Wasted Time" : ""
-                }`}
+                title={`${log.title} (${formatHoursMins(log.duration_seconds)})`}
               />
             );
           })}
@@ -115,7 +111,7 @@ export const DayTimeline24h = ({ logs }: DayTimeline24hProps) => {
                   <span
                     className="h-9 w-1.5 shrink-0 rounded-full"
                     style={{
-                      backgroundColor: log.is_wasted ? "#F59E0B" : categoryColor,
+                      backgroundColor: categoryColor,
                     }}
                   />
 
@@ -130,11 +126,6 @@ export const DayTimeline24h = ({ logs }: DayTimeline24hProps) => {
                       >
                         {categoryName}
                       </span>
-                      {log.is_wasted && (
-                        <span className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold text-amber-900">
-                          <AlertTriangle className="h-3 w-3" /> Wasted
-                        </span>
-                      )}
                     </div>
                     <span className="text-xs font-medium text-gray-500">
                       {startTimeStr} - {endTimeStr}

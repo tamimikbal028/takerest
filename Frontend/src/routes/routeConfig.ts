@@ -49,6 +49,26 @@ export const routes: RouteConfig[] = [
     category: "main",
   },
 
+  // Activities Management
+  {
+    path: "/activities",
+    display: true,
+    Component: lazy(() => import("@/app/activities/page")),
+    requireAuth: true,
+    title: "Activities - Take Rest",
+    category: "main",
+  },
+
+  // Statistics
+  {
+    path: "/statistics",
+    display: true,
+    Component: lazy(() => import("@/app/statistics/page")),
+    requireAuth: true,
+    title: "Statistics - Take Rest",
+    category: "main",
+  },
+
   // Settings
   {
     path: "/settings",

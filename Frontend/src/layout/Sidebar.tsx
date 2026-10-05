@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Settings, User } from "lucide-react";
+import { LayoutDashboard, CheckSquare, BarChart3, Settings, User } from "lucide-react";
 import authHooks from "@/hooks/useAuth";
 
 interface SidebarProps {
@@ -16,6 +16,18 @@ const Sidebar = ({ onClose }: SidebarProps) => {
       label: "Home",
       path: "/",
       active: location.pathname === "/",
+    },
+    {
+      icon: CheckSquare,
+      label: "Activities",
+      path: "/activities",
+      active: location.pathname.startsWith("/activities"),
+    },
+    {
+      icon: BarChart3,
+      label: "Statistics",
+      path: "/statistics",
+      active: location.pathname.startsWith("/statistics"),
     },
     {
       icon: Settings,

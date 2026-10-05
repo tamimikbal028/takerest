@@ -67,14 +67,14 @@ CREATE TABLE IF NOT EXISTS public.users (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 4. CATEGORIES / GROUPS TABLE (Deen, Academic, Others, etc.)
+-- 4. CATEGORIES TABLE (Deen, Academic, Others, etc.)
 CREATE TABLE IF NOT EXISTS public.categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   color TEXT NOT NULL DEFAULT '#3B82F6', -- Hex color for 24h timeline visualization
   icon TEXT DEFAULT 'folder',
-  is_system_default BOOLEAN NOT NULL DEFAULT false, -- True for default 'Others' group
+  is_system_default BOOLEAN NOT NULL DEFAULT false, -- True for default 'Others' category
   sort_order INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -93,17 +93,17 @@ CREATE TABLE IF NOT EXISTS public.activities (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- 6. TIME LOGS TABLE (Continuous 24-hour recorded segments)
+-- 6. TIME LOGS TABLE (Recorded segments)
 CREATE TABLE IF NOT EXISTS public.time_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   category_id UUID NOT NULL REFERENCES public.categories(id) ON DELETE CASCADE,
   activity_id UUID REFERENCES public.activities(id) ON DELETE SET NULL,
-  title TEXT NOT NULL,                         -- Activity name or custom title (e.g. 'Talimuddin', 'Gosol', 'Rest')
+  title TEXT NOT NULL,                         -- Activity name or custom title (e.g. 'Talimuddin', 'Meal', 'Rest')
   started_at TIMESTAMPTZ NOT NULL,
   ended_at TIMESTAMPTZ NOT NULL,
   duration_seconds INTEGER NOT NULL CHECK (duration_seconds >= 0),
-  is_wasted BOOLEAN NOT NULL DEFAULT false,    -- User flag: Mark as Wasted Time
+  is_wasted BOOLEAN NOT NULL DEFAULT false,
   notes TEXT DEFAULT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -115,7 +115,7 @@ CREATE TABLE IF NOT EXISTS public.active_timer (
   activity_id UUID REFERENCES public.activities(id) ON DELETE SET NULL,
   title TEXT NOT NULL DEFAULT 'Others',
   started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  is_running BOOLEAN NOT NULL DEFAULT true,
+  is_running BOOLEAN NOT NULL DEFAULT false,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -200,7 +200,7 @@ BEGIN
     COALESCE((NEW.raw_user_meta_data->>'agree_to_terms')::boolean, true)
   );
 
-  -- 2. Insert Default Categories (Groups)
+  -- 2. Insert Default Categories
   INSERT INTO public.categories (user_id, name, color, icon, sort_order)
   VALUES (NEW.id, 'Deen', '#10B981', 'moon', 1)
   RETURNING id INTO deen_cat_id;
@@ -214,18 +214,24 @@ BEGIN
   RETURNING id INTO others_cat_id;
 
   -- 3. Insert Starter Activities under Deen & Academic
-  INSERT INTO public.activities (user_id, category_id, name, icon, sort_order)
+  INSERT INTO public.activities (user_id, category_id, name, sort_order)
   VALUES 
-    (NEW.id, deen_cat_id, 'Namaz', 'heart', 1),
-    (NEW.id, deen_cat_id, 'Talimuddin', 'bookmark', 2);
+    (NEW.id, deen_cat_id, 'Namaz', 1),
+    (NEW.id, deen_cat_id, 'Talimuddin', 2);
 
-  INSERT INTO public.activities (user_id, category_id, name, icon, sort_order)
+  INSERT INTO public.activities (user_id, category_id, name, sort_order)
   VALUES 
-    (NEW.id, academic_cat_id, 'Course Study', 'code', 1);
+    (NEW.id, academic_cat_id, 'Course Study', 1);
 
-  -- 4. Initialize Active Timer in 'Others' mode
+  INSERT INTO public.activities (user_id, category_id, name, sort_order)
+  VALUES 
+    (NEW.id, others_cat_id, 'Rest', 1),
+    (NEW.id, others_cat_id, 'Meal', 2),
+    (NEW.id, others_cat_id, 'Break', 3);
+
+  -- 4. Initialize Active Timer (stopped by default)
   INSERT INTO public.active_timer (user_id, category_id, title, started_at, is_running)
-  VALUES (NEW.id, others_cat_id, 'Others', now(), true)
+  VALUES (NEW.id, others_cat_id, 'Others', now(), false)
   ON CONFLICT (user_id) DO NOTHING;
 
   RETURN NEW;

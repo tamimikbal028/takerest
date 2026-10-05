@@ -169,7 +169,6 @@ const useSaveChunk = () => {
       title?: string;
       category_id?: string;
       activity_id?: string | null;
-      is_wasted?: boolean;
       notes?: string | null;
     }
   >({
@@ -197,7 +196,6 @@ const useSwitchTimer = () => {
       title?: string;
       save_previous?: boolean;
       previous_title?: string;
-      previous_is_wasted?: boolean;
       previous_notes?: string | null;
     }
   >({
@@ -209,6 +207,56 @@ const useSwitchTimer = () => {
     },
     onError: (err) => {
       toast.error(err.message || "Failed to switch activity");
+    },
+  });
+};
+
+const useStartTimer = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<{ activeTimer: ActiveTimer }>,
+    Error,
+    {
+      category_id?: string;
+      activity_id?: string | null;
+      title?: string;
+    }
+  >({
+    mutationFn: (startData) => trackerServices.startTimer(startData),
+    onSuccess: () => {
+      toast.success("Timer started!");
+      queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.ACTIVE_TIMER] });
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to start timer");
+    },
+  });
+};
+
+const useStopTimer = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<{ savedLog: TimeLog | null; activeTimer: ActiveTimer }>,
+    Error,
+    {
+      notes?: string | null;
+      title?: string;
+    } | undefined
+  >({
+    mutationFn: (stopData) => trackerServices.stopTimer(stopData),
+    onSuccess: (res) => {
+      if (res?.data?.savedLog) {
+        toast.success("Log saved to your day summary!");
+      } else {
+        toast.info("Timer stopped");
+      }
+      queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.ACTIVE_TIMER] });
+      queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.SUMMARY] });
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to stop timer");
     },
   });
 };
@@ -257,6 +305,8 @@ const trackerHooks = {
   useUpdateActivity,
   useDeleteActivity,
   useActiveTimer,
+  useStartTimer,
+  useStopTimer,
   useSaveChunk,
   useSwitchTimer,
   useDaySummary,

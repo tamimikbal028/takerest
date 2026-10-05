@@ -48,7 +48,7 @@ BEGIN
     COALESCE((NEW.raw_user_meta_data->>'agree_to_terms')::boolean, true)
   );
 
-  -- 2. Insert Default Categories (Groups)
+  -- 2. Insert Default Categories
   INSERT INTO public.categories (user_id, name, color, icon, sort_order)
   VALUES (NEW.id, 'Deen', '#10B981', 'moon', 1)
   RETURNING id INTO deen_cat_id;
@@ -62,18 +62,24 @@ BEGIN
   RETURNING id INTO others_cat_id;
 
   -- 3. Insert Starter Activities under Deen & Academic
-  INSERT INTO public.activities (user_id, category_id, name, icon, sort_order)
+  INSERT INTO public.activities (user_id, category_id, name, sort_order)
   VALUES 
-    (NEW.id, deen_cat_id, 'Namaz', 'heart', 1),
-    (NEW.id, deen_cat_id, 'Talimuddin', 'bookmark', 2);
+    (NEW.id, deen_cat_id, 'Namaz', 1),
+    (NEW.id, deen_cat_id, 'Talimuddin', 2);
 
-  INSERT INTO public.activities (user_id, category_id, name, icon, sort_order)
+  INSERT INTO public.activities (user_id, category_id, name, sort_order)
   VALUES 
-    (NEW.id, academic_cat_id, 'Course Study', 'code', 1);
+    (NEW.id, academic_cat_id, 'Course Study', 1);
 
-  -- 4. Initialize Active Timer in 'Others' mode
+  INSERT INTO public.activities (user_id, category_id, name, sort_order)
+  VALUES 
+    (NEW.id, others_cat_id, 'Rest', 1),
+    (NEW.id, others_cat_id, 'Meal', 2),
+    (NEW.id, others_cat_id, 'Break', 3);
+
+  -- 4. Initialize Active Timer (stopped by default)
   INSERT INTO public.active_timer (user_id, category_id, title, started_at, is_running)
-  VALUES (NEW.id, others_cat_id, 'Others', now(), true)
+  VALUES (NEW.id, others_cat_id, 'Others', now(), false)
   ON CONFLICT (user_id) DO NOTHING;
 
   RETURN NEW;

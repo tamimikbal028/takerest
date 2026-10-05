@@ -93,7 +93,6 @@ interface SaveChunkPayload {
   title?: string;
   category_id?: string;
   activity_id?: string | null;
-  is_wasted?: boolean;
   notes?: string | null;
 }
 
@@ -114,7 +113,6 @@ interface SwitchTimerPayload {
   title?: string;
   save_previous?: boolean;
   previous_title?: string;
-  previous_is_wasted?: boolean;
   previous_notes?: string | null;
 }
 
@@ -148,6 +146,38 @@ const deleteTimeLog = async (
   return response.data;
 };
 
+interface StartTimerPayload {
+  category_id?: string;
+  activity_id?: string | null;
+  title?: string;
+}
+
+const startTimer = async (
+  payload: StartTimerPayload
+): Promise<ApiResponse<{ activeTimer: ActiveTimer }>> => {
+  const response = await api.post<ApiResponse<{ activeTimer: ActiveTimer }>>(
+    "/tracker/timer/start",
+    payload
+  );
+  return response.data;
+};
+
+interface StopTimerPayload {
+  notes?: string | null;
+  title?: string;
+}
+
+const stopTimer = async (
+  payload?: StopTimerPayload
+): Promise<
+  ApiResponse<{ savedLog: TimeLog | null; activeTimer: ActiveTimer }>
+> => {
+  const response = await api.post<
+    ApiResponse<{ savedLog: TimeLog | null; activeTimer: ActiveTimer }>
+  >("/tracker/timer/stop", payload || {});
+  return response.data;
+};
+
 const trackerServices = {
   getCategories,
   createCategory,
@@ -157,6 +187,8 @@ const trackerServices = {
   updateActivity,
   deleteActivity,
   getActiveTimer,
+  startTimer,
+  stopTimer,
   saveChunk,
   switchTimer,
   getTodaySummary,
