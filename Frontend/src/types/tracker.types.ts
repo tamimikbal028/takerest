@@ -74,10 +74,13 @@ export interface ActiveTimer {
 export interface ActivityBreakdown {
   id: string;
   name: string;
+  color?: string | null;
   durationSeconds: number;
   minutes: number;
   hours: number;
   percentage: number;
+  categoryPercentage?: number;
+  dayPercentage?: number;
   logsCount: number;
 }
 

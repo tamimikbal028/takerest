@@ -344,12 +344,7 @@ const getActiveTimerService = async (userId) => {
 
 // Save a chunk from the ongoing timer and reset timer to NOW
 const saveChunkService = async (userId, chunkData) => {
-  const {
-    title,
-    category_id,
-    activity_id = null,
-    notes = null,
-  } = chunkData;
+  const { title, category_id, activity_id = null, notes = null } = chunkData;
 
   const { activeTimer } = await getActiveTimerService(userId);
 
@@ -642,10 +637,12 @@ const getTodaySummaryService = async (userId, queryDate) => {
     // Track activity under this category
     const actId = log.activity_id || `title_${log.title || "general"}`;
     const actName = log.activities?.name || log.title || "General";
+    const actColor = log.activities?.color || null;
     if (!categoryMap[catId].activityMap[actId]) {
       categoryMap[catId].activityMap[actId] = {
         id: actId,
         name: actName,
+        color: actColor,
         durationSeconds: 0,
         logsCount: 0,
       };
@@ -668,18 +665,26 @@ const getTodaySummaryService = async (userId, queryDate) => {
         .map((act) => {
           const actMinutes = Math.round(act.durationSeconds / 60);
           const actHours = Number((act.durationSeconds / 3600).toFixed(1));
-          const actPercentage =
+          const actCategoryPercentage =
             cat.durationSeconds > 0
               ? Math.round((act.durationSeconds / cat.durationSeconds) * 100)
               : 0;
+          const actDayPercentage =
+            totalTrackedSeconds > 0
+              ? Math.round((act.durationSeconds / totalTrackedSeconds) * 100)
+              : 0;
+
           return {
             id: act.id,
             name: act.name,
+            color: act.color,
             durationSeconds: act.durationSeconds,
             logsCount: act.logsCount,
             minutes: actMinutes,
             hours: actHours,
-            percentage: actPercentage,
+            percentage: actCategoryPercentage,
+            categoryPercentage: actCategoryPercentage,
+            dayPercentage: actDayPercentage,
           };
         })
         .sort((a, b) => b.durationSeconds - a.durationSeconds);
