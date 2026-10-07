@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
+import type { Location } from "react-router-dom";
 import Sidebar from "@/layout/Sidebar";
 import MainContent from "@/layout/MainContent";
 import authHooks from "@/hooks/useAuth";
@@ -34,14 +35,28 @@ const App = () => {
     return <AuthLoading />;
   }
 
-  const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
+  const isAuthPage =
+    location.pathname === "/login" || location.pathname === "/register";
 
-  if (!isAuthenticated && isAuthPage) {
-    return (
-      <div className="flex w-full items-center justify-center bg-gray-50 lg:h-screen">
-        <MainContent />
-      </div>
-    );
+  // If user is not authenticated: only login and register are accessible.
+  // Any other page redirects to /login with origin path saved.
+  if (!isAuthenticated) {
+    if (isAuthPage) {
+      return (
+        <div className="flex w-full items-center justify-center bg-gray-50 lg:h-screen">
+          <MainContent />
+        </div>
+      );
+    }
+
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // If already authenticated and trying to access /login or /register, redirect to Home
+  if (isAuthPage) {
+    const state = location.state as { from?: Location };
+    const from = state?.from?.pathname || "/";
+    return <Navigate to={from} replace />;
   }
 
   return (

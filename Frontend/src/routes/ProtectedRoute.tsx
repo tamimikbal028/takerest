@@ -5,10 +5,10 @@ import authHooks from "@/hooks/useAuth";
 
 interface Props {
   children: ReactNode;
-  requireAuth: boolean;
+  requireAuth?: boolean;
 }
 
-const ProtectedRoute = ({ children, requireAuth }: Props) => {
+const ProtectedRoute = ({ children, requireAuth = true }: Props) => {
   const { isAuthenticated } = authHooks.useUser();
   const location = useLocation();
 

@@ -1,5 +1,5 @@
 import { FaExclamationTriangle } from "react-icons/fa";
-import { NavLink } from "react-router";
+import { NavLink } from "react-router-dom";
 
 const NotFound = () => {
   return (
@@ -24,4 +24,3 @@ const NotFound = () => {
 };
 
 export default NotFound;
-
