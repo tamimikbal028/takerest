@@ -24,6 +24,107 @@ const ACTIVITY_PALETTE = [
   "#0EA5E9", // sky
 ];
 
+interface DonutSlice {
+  id: string;
+  name: string;
+  color: string;
+  value: number;
+  formattedValue: string;
+  percentage: number;
+}
+
+interface DonutChartProps {
+  slices: DonutSlice[];
+  totalValue: number;
+  centerTitle?: string;
+  centerSubtitle?: string;
+  size?: number;
+}
+
+const DonutChart = ({
+  slices,
+  totalValue,
+  centerTitle,
+  centerSubtitle,
+  size = 140,
+}: DonutChartProps) => {
+  const radius = 38;
+  const strokeWidth = 13;
+  const circumference = 2 * Math.PI * radius; // ~238.76
+
+  const activeSlices = slices.filter((s) => s.value > 0);
+
+  if (activeSlices.length === 0 || totalValue <= 0) {
+    return (
+      <div
+        style={{ width: size, height: size }}
+        className="flex items-center justify-center rounded-full border-2 border-dashed border-gray-200 text-center text-[10px] font-medium text-gray-400"
+      >
+        No Data
+      </div>
+    );
+  }
+
+  let accumulatedOffset = 0;
+
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg
+        viewBox="0 0 100 100"
+        className="h-full w-full -rotate-90 transform"
+      >
+        <circle
+          cx="50"
+          cy="50"
+          r={radius}
+          fill="transparent"
+          stroke="#F3F4F6"
+          strokeWidth={strokeWidth}
+        />
+        {activeSlices.map((slice) => {
+          const sliceFraction = slice.value / totalValue;
+          const sliceLength = sliceFraction * circumference;
+          const strokeDashoffset = -accumulatedOffset;
+          accumulatedOffset += sliceLength;
+
+          return (
+            <circle
+              key={slice.id}
+              cx="50"
+              cy="50"
+              r={radius}
+              fill="transparent"
+              stroke={slice.color}
+              strokeWidth={strokeWidth}
+              strokeDasharray={`${sliceLength} ${circumference}`}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="butt"
+              className="transition-all duration-300 hover:opacity-85"
+            >
+              <title>{`${slice.name}: ${slice.formattedValue} (${slice.percentage}%)`}</title>
+            </circle>
+          );
+        })}
+      </svg>
+
+      {(centerTitle || centerSubtitle) && (
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+          {centerTitle && (
+            <span className="font-mono text-xs font-black text-gray-900 sm:text-sm">
+              {centerTitle}
+            </span>
+          )}
+          {centerSubtitle && (
+            <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">
+              {centerSubtitle}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const StatisticsPage = () => {
   const todayStr = getLocalDateString();
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
@@ -68,7 +169,7 @@ export const StatisticsPage = () => {
 
   return (
     <div className="space-y-5">
-      {/* 1. Header Card: Date Controller & Category Overview Bar */}
+      {/* 1. Header Card: Date Controller & Category Overview */}
       <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-xs sm:p-6">
         <h1 className="sr-only">Statistics - {formattedDateTitle}</h1>
 
@@ -149,55 +250,36 @@ export const StatisticsPage = () => {
           </div>
         </div>
 
-        {/* Overall Category Bar */}
+        {/* Overall Category Donut Chart */}
         <div className="mt-4 border-t border-gray-100 pt-4">
           {isLoading ? (
-            <div className="h-5 w-full animate-pulse rounded-full bg-gray-100" />
+            <div className="h-32 w-full animate-pulse rounded-2xl bg-gray-100" />
           ) : totalTrackedSeconds > 0 ? (
-            <div className="space-y-3">
-              {/* Progress track */}
-              <div className="flex h-5 w-full overflow-hidden rounded-full bg-gray-100 shadow-inner">
-                {categoryBreakdown
-                  .filter((cat) => cat.durationSeconds > 0)
-                  .map((cat, idx, arr) => {
-                    const isFirst = idx === 0;
-                    const isLast = idx === arr.length - 1;
-                    const widthPercent =
-                      totalTrackedSeconds > 0
-                        ? (cat.durationSeconds / totalTrackedSeconds) * 100
-                        : 0;
+            <div className="flex flex-col items-center gap-6 py-2 sm:flex-row sm:items-center">
+              <DonutChart
+                slices={categoryBreakdown.map((cat) => ({
+                  id: cat.id,
+                  name: cat.name,
+                  color: cat.color,
+                  value: cat.durationSeconds,
+                  formattedValue: formatHoursMins(cat.durationSeconds),
+                  percentage: cat.percentage,
+                }))}
+                totalValue={totalTrackedSeconds}
+                centerTitle={formatHoursMins(totalTrackedSeconds)}
+                centerSubtitle="Total"
+                size={140}
+              />
 
-                    return (
-                      <div
-                        key={cat.id}
-                        style={{
-                          width: `${widthPercent}%`,
-                          backgroundColor: cat.color,
-                        }}
-                        title={`${cat.name}: ${cat.hours}h (${cat.percentage}%)`}
-                        className={`h-full transition-all duration-300 hover:opacity-90 ${
-                          isFirst && isLast
-                            ? "rounded-full"
-                            : isFirst
-                              ? "rounded-l-full"
-                              : isLast
-                                ? "rounded-r-full"
-                                : ""
-                        }`}
-                      />
-                    );
-                  })}
-              </div>
-
-              {/* Legend pills */}
-              <div className="flex flex-wrap gap-2">
+              {/* Legend pills beside the Donut Chart */}
+              <div className="flex flex-1 flex-wrap items-center gap-2">
                 {categoryBreakdown.map((cat) => (
                   <div
                     key={cat.id}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-800 transition hover:border-gray-300"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-800 transition hover:border-gray-300"
                   >
                     <span
-                      className="h-2 w-2 rounded-full"
+                      className="h-2.5 w-2.5 rounded-full"
                       style={{ backgroundColor: cat.color }}
                     />
                     <span>{cat.name}</span>
@@ -219,7 +301,7 @@ export const StatisticsPage = () => {
         </div>
       </div>
 
-      {/* 2. Loading / Error / Activity Bars for Each Category */}
+      {/* 2. Loading / Error / Activity Donut Charts for Each Category */}
       {isLoading ? (
         <div className="flex min-h-[250px] flex-col items-center justify-center space-y-4 rounded-3xl border border-gray-200 bg-white p-12">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
@@ -275,67 +357,45 @@ export const StatisticsPage = () => {
                   </div>
                 </div>
 
-                {/* Activity Bar (Proportional to this Category) */}
+                {/* Activity Donut Chart & Legend */}
                 <div className="pt-4">
                   {hasActivities ? (
-                    <div className="space-y-3">
-                      {/* Segmented Activity Track for this Category */}
-                      <div className="flex h-5 w-full overflow-hidden rounded-full bg-gray-100 shadow-inner">
-                        {activities
-                          .filter((act) => act.durationSeconds > 0)
-                          .map((act, idx, arr) => {
-                            const actColor =
-                              act.color ||
-                              (arr.length === 1
-                                ? cat.color
-                                : ACTIVITY_PALETTE[
-                                    idx % ACTIVITY_PALETTE.length
-                                  ]);
+                    <div className="flex flex-col items-center gap-6 py-2 sm:flex-row sm:items-center">
+                      <DonutChart
+                        slices={activities.map((act, idx) => {
+                          const actColor =
+                            act.color ||
+                            (activities.length === 1
+                              ? cat.color
+                              : ACTIVITY_PALETTE[
+                                  idx % ACTIVITY_PALETTE.length
+                                ]);
+                          const actCategoryPercent =
+                            cat.durationSeconds > 0
+                              ? Math.round(
+                                  (act.durationSeconds / cat.durationSeconds) *
+                                    100
+                                )
+                              : 0;
+                          return {
+                            id: act.id,
+                            name: act.name,
+                            color: actColor,
+                            value: act.durationSeconds,
+                            formattedValue: formatHoursMins(
+                              act.durationSeconds
+                            ),
+                            percentage: actCategoryPercent,
+                          };
+                        })}
+                        totalValue={cat.durationSeconds}
+                        centerTitle={formatHoursMins(cat.durationSeconds)}
+                        centerSubtitle={cat.name}
+                        size={130}
+                      />
 
-                            const actCategoryPercent =
-                              cat.durationSeconds > 0
-                                ? Math.round(
-                                    (act.durationSeconds /
-                                      cat.durationSeconds) *
-                                      100
-                                  )
-                                : 0;
-
-                            const actWidthPercent =
-                              cat.durationSeconds > 0
-                                ? (act.durationSeconds / cat.durationSeconds) *
-                                  100
-                                : 0;
-
-                            const isFirst = idx === 0;
-                            const isLast = idx === arr.length - 1;
-
-                            return (
-                              <div
-                                key={act.id}
-                                style={{
-                                  width: `${actWidthPercent}%`,
-                                  backgroundColor: actColor,
-                                }}
-                                title={`${act.name}: ${formatHoursMins(
-                                  act.durationSeconds
-                                )} (${actCategoryPercent}%)`}
-                                className={`h-full transition-all duration-300 hover:opacity-90 ${
-                                  isFirst && isLast
-                                    ? "rounded-full"
-                                    : isFirst
-                                      ? "rounded-l-full"
-                                      : isLast
-                                        ? "rounded-r-full"
-                                        : ""
-                                }`}
-                              />
-                            );
-                          })}
-                      </div>
-
-                      {/* Activity Legend Pills */}
-                      <div className="flex flex-wrap gap-2">
+                      {/* Activity Legend Pills beside Donut */}
+                      <div className="flex flex-1 flex-wrap items-center gap-2">
                         {activities.map((act, idx) => {
                           const actColor =
                             act.color ||
@@ -344,11 +404,11 @@ export const StatisticsPage = () => {
                               : ACTIVITY_PALETTE[
                                   idx % ACTIVITY_PALETTE.length
                                 ]);
-
                           const actCategoryPercent =
                             cat.durationSeconds > 0
                               ? Math.round(
-                                  (act.durationSeconds / cat.durationSeconds) *
+                                  (act.durationSeconds /
+                                    cat.durationSeconds) *
                                     100
                                 )
                               : 0;
@@ -356,10 +416,10 @@ export const StatisticsPage = () => {
                           return (
                             <div
                               key={act.id}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-800 transition hover:border-gray-300"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-800 transition hover:border-gray-300"
                             >
                               <span
-                                className="h-2 w-2 rounded-full"
+                                className="h-2.5 w-2.5 rounded-full"
                                 style={{ backgroundColor: actColor }}
                               />
                               <span>{act.name}</span>
