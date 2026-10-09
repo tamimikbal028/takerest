@@ -1,5 +1,11 @@
 import { NavLink } from "react-router-dom";
-import { Menu, LayoutDashboard, Settings } from "lucide-react";
+import {
+  Menu,
+  LayoutDashboard,
+  CheckSquare,
+  BarChart3,
+  Settings,
+} from "lucide-react";
 
 interface MobileTopNavbarProps {
   onToggleSidebar: () => void;
@@ -11,6 +17,16 @@ const MobileTopNavbar = ({ onToggleSidebar }: MobileTopNavbarProps) => {
       to: "/",
       icon: LayoutDashboard,
       label: "Home",
+    },
+    {
+      to: "/activities",
+      icon: CheckSquare,
+      label: "Activities",
+    },
+    {
+      to: "/statistics",
+      icon: BarChart3,
+      label: "Statistics",
     },
     {
       to: "/settings",
