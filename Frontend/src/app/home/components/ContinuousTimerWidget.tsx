@@ -12,8 +12,10 @@ export const ContinuousTimerWidget = ({
   categories,
 }: ContinuousTimerWidgetProps) => {
   const { activeTimer, isLoading } = trackerHooks.useActiveTimer();
-  const { mutate: startTimer, isPending: isStarting } = trackerHooks.useStartTimer();
-  const { mutate: stopTimer, isPending: isStopping } = trackerHooks.useStopTimer();
+  const { mutate: startTimer, isPending: isStarting } =
+    trackerHooks.useStartTimer();
+  const { mutate: stopTimer, isPending: isStopping } =
+    trackerHooks.useStopTimer();
 
   const isRunning = Boolean(activeTimer?.is_running);
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
@@ -31,6 +33,8 @@ export const ContinuousTimerWidget = ({
           return;
         }
       }
+      // If categories exist but none have activities, fallback to first category
+      setSelectedKey(`cat_${categories[0].id}`);
     }
   }, [categories, selectedKey]);
 
@@ -77,11 +81,15 @@ export const ContinuousTimerWidget = ({
       const cat = categories.find((c) => c.id === catId);
       const act = cat?.activities?.find((a) => a.id === actId);
       targetTitle = act?.name || "Activity";
-    } else if (selectedKey.startsWith("others_")) {
+    } else if (
+      selectedKey.startsWith("cat_") ||
+      selectedKey.startsWith("others_")
+    ) {
       const [, catId] = selectedKey.split("_");
       targetCatId = catId;
       targetActId = null;
-      targetTitle = "Others (Routine / Rest)";
+      const cat = categories.find((c) => c.id === catId);
+      targetTitle = cat?.name || "Task";
     }
 
     startTimer({
@@ -109,7 +117,9 @@ export const ContinuousTimerWidget = ({
     );
   }
 
-  const activeCategory = activeTimer?.categories || categories.find((c) => c.id === activeTimer?.category_id);
+  const activeCategory =
+    activeTimer?.categories ||
+    categories.find((c) => c.id === activeTimer?.category_id);
   const activeColor = activeCategory?.color || "#3B82F6";
 
   return (
@@ -140,7 +150,7 @@ export const ContinuousTimerWidget = ({
                   />
                 </span>
                 <span
-                  className="rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-white shadow-2xs"
+                  className="rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wider text-white uppercase shadow-2xs"
                   style={{ backgroundColor: activeColor }}
                 >
                   {activeCategory?.name || "Active"}
@@ -164,7 +174,9 @@ export const ContinuousTimerWidget = ({
 
           <p className="mt-1 text-xs font-medium text-gray-400">
             {isRunning && activeTimer?.started_at
-              ? `Started at ${new Date(activeTimer.started_at).toLocaleTimeString([], {
+              ? `Started at ${new Date(
+                  activeTimer.started_at
+                ).toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
                   second: "2-digit",
@@ -189,10 +201,13 @@ export const ContinuousTimerWidget = ({
             </div>
           ) : (
             /* Timer is stopped: Select Activity and Start */
-            <form onSubmit={handleStart} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <form
+              onSubmit={handleStart}
+              className="flex flex-col gap-3 sm:flex-row sm:items-end"
+            >
               <div className="w-full sm:w-64">
                 <div className="flex items-center justify-between pb-1">
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                  <label className="block text-[11px] font-bold tracking-wider text-gray-500 uppercase">
                     What are you doing?
                   </label>
                   <Link
@@ -216,8 +231,8 @@ export const ContinuousTimerWidget = ({
                         </option>
                       ))}
                       {(c.activities || []).length === 0 && (
-                        <option disabled value="">
-                          (No activities in {c.name})
+                        <option value={`cat_${c.id}`}>
+                          {c.name} (General)
                         </option>
                       )}
                     </optgroup>

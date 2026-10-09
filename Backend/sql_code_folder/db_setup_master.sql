@@ -165,8 +165,6 @@ RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   base_username TEXT;
   final_username TEXT;
-  deen_cat_id UUID;
-  academic_cat_id UUID;
   others_cat_id UUID;
 BEGIN
   -- Generate unique username from email
@@ -200,29 +198,12 @@ BEGIN
     COALESCE((NEW.raw_user_meta_data->>'agree_to_terms')::boolean, true)
   );
 
-  -- 2. Insert Default Categories
-  INSERT INTO public.categories (user_id, name, color, icon, sort_order)
-  VALUES (NEW.id, 'Deen', '#10B981', 'moon', 1)
-  RETURNING id INTO deen_cat_id;
-
-  INSERT INTO public.categories (user_id, name, color, icon, sort_order)
-  VALUES (NEW.id, 'Academic', '#3B82F6', 'book-open', 2)
-  RETURNING id INTO academic_cat_id;
-
+  -- 2. Insert Starter Category: Others
   INSERT INTO public.categories (user_id, name, color, icon, is_system_default, sort_order)
-  VALUES (NEW.id, 'Others', '#64748B', 'clock', 99)
+  VALUES (NEW.id, 'Others', '#64748B', 'clock', false, 1)
   RETURNING id INTO others_cat_id;
 
-  -- 3. Insert Starter Activities under Deen & Academic
-  INSERT INTO public.activities (user_id, category_id, name, sort_order)
-  VALUES 
-    (NEW.id, deen_cat_id, 'Namaz', 1),
-    (NEW.id, deen_cat_id, 'Talimuddin', 2);
-
-  INSERT INTO public.activities (user_id, category_id, name, sort_order)
-  VALUES 
-    (NEW.id, academic_cat_id, 'Course Study', 1);
-
+  -- 3. Insert Starter Activities under Others
   INSERT INTO public.activities (user_id, category_id, name, sort_order)
   VALUES 
     (NEW.id, others_cat_id, 'Rest', 1),

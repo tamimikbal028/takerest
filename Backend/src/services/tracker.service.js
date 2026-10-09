@@ -8,80 +8,78 @@ import {
   ACTIVE_TIMER_SELECT,
 } from "../constants/tracker.js";
 
-// Helper: Ensure user has an "Others" category with starter activities
-const ensureDefaultOthersCategory = async (userId) => {
+// Helper: Provision starter 'Others' category with 3 activities ONLY on user registration
+export const provisionNewUserStarterData = async (userId) => {
+  // Check if user already has any category
   const { data: existing, error: searchError } = await supabase
     .from("categories")
-    .select(CATEGORY_SELECT)
-    .eq("user_id", userId)
-    .eq("is_system_default", true)
-    .maybeSingle();
-
-  if (searchError) {
-    throw new ApiError(500, "Failed to inspect default category.");
-  }
-
-  let othersCategory = existing;
-
-  if (!existing) {
-    const { data: created, error: createError } = await supabase
-      .from("categories")
-      .insert({
-        user_id: userId,
-        name: "Others",
-        color: "#64748B",
-        icon: "clock",
-        is_system_default: true,
-        sort_order: 99,
-      })
-      .select(CATEGORY_SELECT)
-      .single();
-
-    if (createError) {
-      throw new ApiError(500, "Failed to create default Others category.");
-    }
-    othersCategory = created;
-  }
-
-  // Check if Others has activities; if none, auto-provision common ones (Rest, Meal, Break)
-  const { data: actList } = await supabase
-    .from("activities")
     .select("id")
     .eq("user_id", userId)
-    .eq("category_id", othersCategory.id);
+    .limit(1);
 
-  if (!actList || actList.length === 0) {
-    await supabase.from("activities").insert([
-      {
-        user_id: userId,
-        category_id: othersCategory.id,
-        name: "Rest",
-        sort_order: 1,
-      },
-      {
-        user_id: userId,
-        category_id: othersCategory.id,
-        name: "Meal",
-        sort_order: 2,
-      },
-      {
-        user_id: userId,
-        category_id: othersCategory.id,
-        name: "Break",
-        sort_order: 3,
-      },
-    ]);
+  if (searchError || (existing && existing.length > 0)) {
+    return;
   }
 
-  return othersCategory;
+  // Create standard "Others" category
+  const { data: createdCat, error: createError } = await supabase
+    .from("categories")
+    .insert({
+      user_id: userId,
+      name: "Others",
+      color: "#64748B",
+      icon: "clock",
+      is_system_default: false,
+      sort_order: 1,
+    })
+    .select(CATEGORY_SELECT)
+    .single();
+
+  if (createError || !createdCat) {
+    return;
+  }
+
+  // Create 3 starter activities
+  await supabase.from("activities").insert([
+    {
+      user_id: userId,
+      category_id: createdCat.id,
+      name: "Rest",
+      sort_order: 1,
+    },
+    {
+      user_id: userId,
+      category_id: createdCat.id,
+      name: "Meal",
+      sort_order: 2,
+    },
+    {
+      user_id: userId,
+      category_id: createdCat.id,
+      name: "Break",
+      sort_order: 3,
+    },
+  ]);
+
+  // Initialize active timer (stopped by default)
+  await supabase
+    .from("active_timer")
+    .upsert(
+      {
+        user_id: userId,
+        category_id: createdCat.id,
+        title: "Others",
+        started_at: new Date().toISOString(),
+        is_running: false,
+      },
+      { onConflict: "user_id" }
+    );
 };
 
 // ==========================================
 // 1. CATEGORIES & ACTIVITIES
 // ==========================================
 const getCategoriesWithActivitiesService = async (userId) => {
-  // Ensure default "Others" category exists
-  await ensureDefaultOthersCategory(userId);
 
   // Fetch all categories for user
   const { data: categoriesData, error: catError } = await supabase
@@ -187,18 +185,6 @@ const updateCategoryService = async (
 };
 
 const deleteCategoryService = async (userId, categoryId) => {
-  // Prevent deleting system default 'Others' category
-  const { data: existing } = await supabase
-    .from("categories")
-    .select("is_system_default")
-    .eq("id", categoryId)
-    .eq("user_id", userId)
-    .single();
-
-  if (existing?.is_system_default) {
-    throw new ApiError(400, "Cannot delete the default Others category.");
-  }
-
   const { error } = await supabase
     .from("categories")
     .delete()
@@ -314,15 +300,21 @@ const getActiveTimerService = async (userId) => {
     throw new ApiError(500, "Failed to fetch active timer state.");
   }
 
-  // If no timer exists, initialize one in 'Others' category (stopped by default)
+  // If no timer exists, initialize a default stopped timer
   if (!timer) {
-    const othersCat = await ensureDefaultOthersCategory(userId);
+    const { data: firstCat } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
+
     const { data: created, error: createError } = await supabase
       .from("active_timer")
       .insert({
         user_id: userId,
-        category_id: othersCat.id,
-        title: "Others",
+        category_id: firstCat?.id || null,
+        title: "Timer",
         started_at: new Date().toISOString(),
         is_running: false,
       })
@@ -500,8 +492,13 @@ const startTimerService = async (
 
   let targetCatId = category_id;
   if (!targetCatId) {
-    const defaultCat = await ensureDefaultOthersCategory(userId);
-    targetCatId = defaultCat.id;
+    const { data: firstCat } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
+    targetCatId = firstCat?.id || null;
   }
 
   const taskTitle = title?.trim() || "Active Task";
@@ -744,6 +741,7 @@ const deleteTimeLogService = async (userId, logId) => {
 // EXPORT IN PLURAL FORM
 // ==========================================
 const trackerServices = {
+  provisionNewUserStarterData,
   getCategoriesWithActivitiesService,
   createCategoryService,
   updateCategoryService,

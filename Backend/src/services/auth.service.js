@@ -7,6 +7,7 @@ import {
 import jwt from "jsonwebtoken";
 import { GetAuthUserWithMeta } from "../utils/AuthUserWithMeta.js";
 import { ApiError } from "../utils/ApiError.js";
+import { provisionNewUserStarterData } from "./tracker.service.js";
 
 const assertAccountAllowed = (profile, { forRegister = false } = {}) => {
   if (!profile) return;
@@ -147,6 +148,13 @@ const registerUserService = async (userData) => {
   }
 
   const userId = authData.user.id;
+
+  // Provision starter 'Others' category with 3 starter activities (Rest, Meal, Break)
+  try {
+    await provisionNewUserStarterData(userId);
+  } catch (starterErr) {
+    console.error("Failed to provision starter data for new user:", starterErr?.message);
+  }
 
   // public.users row + unique user_name: SQL handle_new_user trigger on auth.users
   const profile = await fetchProfileById(userId);
