@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, Edit2, CheckCircle2, Filter } from "lucide-react";
+import { Plus, Trash2, Edit2, CheckCircle2 } from "lucide-react";
 import trackerHooks from "@/hooks/useTracker";
 import type { Category, Activity } from "@/types";
 
@@ -194,11 +194,6 @@ const ActivitiesPage = () => {
 
       {/* Category Filter Pills */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-1.5 pr-2 text-xs font-bold text-gray-400">
-          <Filter className="h-3.5 w-3.5" />
-          <span>Category:</span>
-        </div>
-
         <button
           onClick={() => setSelectedFilterCategory("ALL")}
           className={`cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold transition ${
@@ -236,9 +231,12 @@ const ActivitiesPage = () => {
       </div>
 
       {/* Activities Display (Grouped by Category) */}
-      <div className="space-y-6">
+      <div className="space-y-5">
         {filteredCategories.map((cat) => {
           const activities = cat.activities || [];
+          const isProtected = Boolean(
+            cat.is_system_default || cat.name?.trim().toLowerCase() === "study"
+          );
 
           return (
             <div
@@ -262,32 +260,43 @@ const ActivitiesPage = () => {
                 </div>
 
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => {
-                      setEditingCategory(cat);
-                      setEditCategoryName(cat.name);
-                      setEditCategoryColor(cat.color);
-                    }}
-                    className="cursor-pointer rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-blue-600"
-                    title="Edit Category Name / Color"
-                  >
-                    <Edit2 className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (
-                        confirm(
-                          `Delete category "${cat.name}" and all its activities?`
-                        )
-                      ) {
-                        deleteCategory(cat.id);
-                      }
-                    }}
-                    className="cursor-pointer rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
-                    title="Delete Category"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  {!isProtected ? (
+                    <>
+                      <button
+                        onClick={() => {
+                          setEditingCategory(cat);
+                          setEditCategoryName(cat.name);
+                          setEditCategoryColor(cat.color);
+                        }}
+                        className="cursor-pointer rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-blue-600"
+                        title="Edit Category Name / Color"
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (
+                            confirm(
+                              `Delete category "${cat.name}" and all its activities?`
+                            )
+                          ) {
+                            deleteCategory(cat.id);
+                          }
+                        }}
+                        className="cursor-pointer rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
+                        title="Delete Category"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </>
+                  ) : (
+                    <span
+                      className="rounded-lg bg-blue-50 px-2.5 py-0.5 text-[10px] font-bold text-blue-600 select-none"
+                      title="Study category cannot be edited or deleted"
+                    >
+                      Permanent
+                    </span>
+                  )}
                 </div>
               </div>
 

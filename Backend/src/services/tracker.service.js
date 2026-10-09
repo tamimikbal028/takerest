@@ -8,7 +8,7 @@ import {
   ACTIVE_TIMER_SELECT,
 } from "../constants/tracker.js";
 
-// Helper: Provision starter 'Others' category with 3 activities ONLY on user registration
+// Helper: Provision starter categories ('Study' with Course 1-5 and 'Others' with Rest, Meal, Break) ONLY on user registration
 export const provisionNewUserStarterData = async (userId) => {
   // Check if user already has any category
   const { data: existing, error: searchError } = await supabase
@@ -21,8 +21,58 @@ export const provisionNewUserStarterData = async (userId) => {
     return;
   }
 
-  // Create standard "Others" category
-  const { data: createdCat, error: createError } = await supabase
+  // 1. Create permanent "Study" category (undeletable: is_system_default = true)
+  const { data: studyCat } = await supabase
+    .from("categories")
+    .insert({
+      user_id: userId,
+      name: "Study",
+      color: "#3B82F6",
+      icon: "book-open",
+      is_system_default: true,
+      sort_order: 1,
+    })
+    .select(CATEGORY_SELECT)
+    .single();
+
+  if (studyCat) {
+    // Insert 5 course activities under Study
+    await supabase.from("activities").insert([
+      {
+        user_id: userId,
+        category_id: studyCat.id,
+        name: "Course 1",
+        sort_order: 1,
+      },
+      {
+        user_id: userId,
+        category_id: studyCat.id,
+        name: "Course 2",
+        sort_order: 2,
+      },
+      {
+        user_id: userId,
+        category_id: studyCat.id,
+        name: "Course 3",
+        sort_order: 3,
+      },
+      {
+        user_id: userId,
+        category_id: studyCat.id,
+        name: "Course 4",
+        sort_order: 4,
+      },
+      {
+        user_id: userId,
+        category_id: studyCat.id,
+        name: "Course 5",
+        sort_order: 5,
+      },
+    ]);
+  }
+
+  // 2. Create standard "Others" category (deletable: is_system_default = false)
+  const { data: othersCat } = await supabase
     .from("categories")
     .insert({
       user_id: userId,
@@ -30,57 +80,54 @@ export const provisionNewUserStarterData = async (userId) => {
       color: "#64748B",
       icon: "clock",
       is_system_default: false,
-      sort_order: 1,
+      sort_order: 2,
     })
     .select(CATEGORY_SELECT)
     .single();
 
-  if (createError || !createdCat) {
-    return;
-  }
-
-  // Create 3 starter activities
-  await supabase.from("activities").insert([
-    {
-      user_id: userId,
-      category_id: createdCat.id,
-      name: "Rest",
-      sort_order: 1,
-    },
-    {
-      user_id: userId,
-      category_id: createdCat.id,
-      name: "Meal",
-      sort_order: 2,
-    },
-    {
-      user_id: userId,
-      category_id: createdCat.id,
-      name: "Break",
-      sort_order: 3,
-    },
-  ]);
-
-  // Initialize active timer (stopped by default)
-  await supabase
-    .from("active_timer")
-    .upsert(
+  if (othersCat) {
+    // Create 3 starter activities under Others
+    await supabase.from("activities").insert([
       {
         user_id: userId,
-        category_id: createdCat.id,
-        title: "Others",
-        started_at: new Date().toISOString(),
-        is_running: false,
+        category_id: othersCat.id,
+        name: "Rest",
+        sort_order: 1,
       },
-      { onConflict: "user_id" }
-    );
+      {
+        user_id: userId,
+        category_id: othersCat.id,
+        name: "Meal",
+        sort_order: 2,
+      },
+      {
+        user_id: userId,
+        category_id: othersCat.id,
+        name: "Break",
+        sort_order: 3,
+      },
+    ]);
+  }
+
+  // 3. Initialize active timer (stopped by default)
+  const timerCatId = othersCat?.id || studyCat?.id || null;
+  const timerTitle = othersCat ? "Others" : "Study";
+  await supabase.from("active_timer").upsert(
+    {
+      user_id: userId,
+      category_id: timerCatId,
+      title: timerTitle,
+      started_at: new Date().toISOString(),
+      is_running: false,
+    },
+    { onConflict: "user_id" }
+  );
 };
 
 // ==========================================
 // 1. CATEGORIES & ACTIVITIES
 // ==========================================
 const getCategoriesWithActivitiesService = async (userId) => {
-
   // Fetch all categories for user
   const { data: categoriesData, error: catError } = await supabase
     .from("categories")
@@ -160,6 +207,25 @@ const updateCategoryService = async (
   categoryId,
   { name, color, icon }
 ) => {
+  // Prevent editing protected Study category
+  const { data: existing, error: findError } = await supabase
+    .from("categories")
+    .select("name, is_system_default")
+    .eq("id", categoryId)
+    .eq("user_id", userId)
+    .single();
+
+  if (findError || !existing) {
+    throw new ApiError(404, "Category not found.");
+  }
+
+  if (
+    existing.is_system_default ||
+    existing.name?.trim().toLowerCase() === "study"
+  ) {
+    throw new ApiError(400, "The Study category cannot be edited.");
+  }
+
   const updateFields = {};
   if (name !== undefined) updateFields.name = name.trim();
   if (color !== undefined) updateFields.color = color;
@@ -185,6 +251,25 @@ const updateCategoryService = async (
 };
 
 const deleteCategoryService = async (userId, categoryId) => {
+  // Prevent deleting protected categories (e.g. Study or is_system_default)
+  const { data: existing, error: findError } = await supabase
+    .from("categories")
+    .select("name, is_system_default")
+    .eq("id", categoryId)
+    .eq("user_id", userId)
+    .single();
+
+  if (findError || !existing) {
+    throw new ApiError(404, "Category not found.");
+  }
+
+  if (
+    existing.is_system_default ||
+    existing.name?.trim().toLowerCase() === "study"
+  ) {
+    throw new ApiError(400, "The Study category cannot be deleted.");
+  }
+
   const { error } = await supabase
     .from("categories")
     .delete()

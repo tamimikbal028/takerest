@@ -20,4 +20,4 @@ What Gets Created:
 3. activities: Specific items under groups (e.g., Namaz, Talimuddin, Courses).
 4. time_logs: Recorded time chunks (start_time, end_time, duration, is_wasted).
 5. active_timer: Keeps track of the current ongoing timer so refreshes/closing never lose time.
-6. Auto-provisioning: When a new user registers, an 'Others' category with 3 starter activities (Rest, Meal, Break) is automatically created for them!
+6. Auto-provisioning: When a new user registers, a permanent 'Study' category (with Course 1-5) and an 'Others' category (with Rest, Meal, Break) are automatically created for them!
