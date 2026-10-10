@@ -8,6 +8,7 @@ import authHooks from "@/hooks/useAuth";
 import { AUTH_KEYS } from "@/constants";
 import MobileTopNavbar from "@/layout/MobileTopNavbar";
 import AuthLoading from "@/app/shared/LoadingSkeleton/AuthLoading";
+import { supabase } from "@/config/supabase";
 
 const App = () => {
   const queryClient = useQueryClient();
@@ -16,18 +17,20 @@ const App = () => {
 
   const { isCheckingAuth, isAuthenticated } = authHooks.useUser();
 
-  // Global logout event listener
-  // Axios interceptor fires this when all tokens expire
+  // Supabase Auth State Change Listener
   useEffect(() => {
-    const handleLogout = () => {
-      console.log("Global logout event received");
-      // Clear user data in cache
-      queryClient.setQueryData([AUTH_KEYS.CURRENT_USER], null);
-    };
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session) {
+        queryClient.setQueryData([AUTH_KEYS.CURRENT_USER], null);
+      } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        queryClient.invalidateQueries({ queryKey: [AUTH_KEYS.CURRENT_USER] });
+      }
+    });
 
-    window.addEventListener("auth:logout", handleLogout);
     return () => {
-      window.removeEventListener("auth:logout", handleLogout);
+      subscription.unsubscribe();
     };
   }, [queryClient]);
 

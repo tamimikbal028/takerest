@@ -289,3 +289,16 @@ CREATE POLICY "Users can manage own active timer"
   ON public.active_timer FOR ALL TO authenticated
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
+
+-- ========================================================
+-- GRANTS
+-- ========================================================
+GRANT ALL ON TABLE public.users TO service_role;
+GRANT ALL ON TABLE public.categories TO service_role;
+GRANT ALL ON TABLE public.activities TO service_role;
+GRANT ALL ON TABLE public.time_logs TO service_role;
+GRANT ALL ON TABLE public.active_timer TO service_role;
+
+-- Grants for authenticated users (Frontend direct Supabase client)
+GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;

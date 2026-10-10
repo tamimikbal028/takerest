@@ -6,15 +6,14 @@ import authServices from "@/services/auth.service";
 import { handleMutationError } from "@/utils/errorHandler";
 import type { LoginType, RegisterType } from "@/types";
 import { AUTH_KEYS, USER_TYPES } from "@/constants";
-import { supabase } from "@/config/supabase";
 
 // Default query options for current user
 const currentUserQueryOptions = {
   retry: false,
-  staleTime: Infinity,
-  gcTime: Infinity,
+  staleTime: 1000 * 60 * 5, // 5 mins
+  gcTime: 1000 * 60 * 10,
   refetchOnWindowFocus: false,
-  refetchOnMount: false,
+  refetchOnMount: true,
   refetchOnReconnect: false,
 };
 
@@ -27,7 +26,7 @@ const useUser = () => {
         // Returns { user, meta }
         return res.data;
       } catch {
-        // If not logged in (401), just return null for a clean state
+        // If not logged in, return null for a clean state
         return null;
       }
     },
@@ -52,15 +51,7 @@ const useRegister = () => {
   return useMutation({
     mutationFn: (registerData: RegisterType) =>
       authServices.register(registerData),
-    onSuccess: async (response) => {
-      if (response.data?.supabaseSession) {
-        try {
-          await supabase.auth.setSession(response.data.supabaseSession);
-        } catch (e) {
-          console.error("Failed to set Supabase session on register:", e);
-          toast.error("Failed to sync Supabase session.");
-        }
-      }
+    onSuccess: (response) => {
       queryClient.setQueryData([AUTH_KEYS.CURRENT_USER], response.data);
       toast.success(response.message);
       navigate("/");
@@ -79,15 +70,7 @@ const useLogin = () => {
 
   return useMutation({
     mutationFn: (loginData: LoginType) => authServices.login(loginData),
-    onSuccess: async (response) => {
-      if (response.data?.supabaseSession) {
-        try {
-          await supabase.auth.setSession(response.data.supabaseSession);
-        } catch (e) {
-          console.error("Failed to set Supabase session on login:", e);
-          toast.error("Failed to sync Supabase session.");
-        }
-      }
+    onSuccess: (response) => {
       queryClient.setQueryData([AUTH_KEYS.CURRENT_USER], response.data);
       toast.success(response.message);
 
@@ -109,27 +92,16 @@ const useLogout = () => {
 
   return useMutation({
     mutationFn: () => authServices.logout(),
-    onSuccess: async (response) => {
-      try {
-        await supabase.auth.signOut();
-      } catch (e) {
-        console.error("Supabase signOut error:", e);
-        toast.error("Failed to sign out from Supabase.");
-      }
+    onSuccess: (response) => {
       queryClient.setQueryData([AUTH_KEYS.CURRENT_USER], null);
       queryClient.removeQueries({ queryKey: [AUTH_KEYS.CURRENT_USER] });
-      toast.success(response?.message);
+      toast.success(response?.message || "Signed out successfully");
       navigate("/login");
     },
-    onError: async (error: unknown) => {
-      try {
-        await supabase.auth.signOut();
-      } catch (e) {
-        console.error("Supabase signOut error:", e);
-        toast.error("Failed to sign out from Supabase.");
-      }
+    onError: (error: unknown) => {
       queryClient.setQueryData([AUTH_KEYS.CURRENT_USER], null);
-      handleMutationError(error, "Logout failed, signed out locally.");
+      queryClient.removeQueries({ queryKey: [AUTH_KEYS.CURRENT_USER] });
+      handleMutationError(error, "Logout error, signed out locally.");
       navigate("/login");
     },
   });

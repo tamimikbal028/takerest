@@ -1,6 +1,27 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import trackerServices from "@/services/trackerServices";
+import {
+  supabaseGetCategories,
+  supabaseCreateCategory,
+  supabaseUpdateCategory,
+  supabaseDeleteCategory,
+} from "@/services/supabase/categories.supabase";
+import {
+  supabaseCreateActivity,
+  supabaseUpdateActivity,
+  supabaseDeleteActivity,
+} from "@/services/supabase/activities.supabase";
+import {
+  supabaseGetActiveTimer,
+  supabaseSaveChunk,
+  supabaseSwitchTimer,
+  supabaseStartTimer,
+  supabaseStopTimer,
+} from "@/services/supabase/timer.supabase";
+import {
+  supabaseGetTodaySummary,
+  supabaseDeleteTimeLog,
+} from "@/services/supabase/logs.supabase";
 import { TRACKER_KEYS } from "@/constants/queryKeys";
 import type {
   ApiResponse,
@@ -17,7 +38,7 @@ const useCategories = () => {
     ApiResponse<{ categories: Category[] }>
   >({
     queryKey: [TRACKER_KEYS.CATEGORIES],
-    queryFn: () => trackerServices.getCategories(),
+    queryFn: () => supabaseGetCategories(),
     staleTime: 1000 * 60 * 5, // 5 mins
   });
 
@@ -38,7 +59,7 @@ const useCreateCategory = () => {
     Error,
     Partial<Category>
   >({
-    mutationFn: (categoryData) => trackerServices.createCategory(categoryData),
+    mutationFn: (categoryData) => supabaseCreateCategory(categoryData),
     onSuccess: () => {
       toast.success("Group created successfully");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.CATEGORIES] });
@@ -57,7 +78,7 @@ const useUpdateCategory = () => {
     Error,
     { id: string; data: Partial<Category> }
   >({
-    mutationFn: ({ id, data }) => trackerServices.updateCategory(id, data),
+    mutationFn: ({ id, data }) => supabaseUpdateCategory(id, data),
     onSuccess: () => {
       toast.success("Group updated");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.CATEGORIES] });
@@ -73,7 +94,7 @@ const useDeleteCategory = () => {
   const queryClient = useQueryClient();
 
   return useMutation<ApiResponse<{ deletedId: string }>, Error, string>({
-    mutationFn: (id) => trackerServices.deleteCategory(id),
+    mutationFn: (id) => supabaseDeleteCategory(id),
     onSuccess: () => {
       toast.success("Group removed");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.CATEGORIES] });
@@ -94,7 +115,7 @@ const useCreateActivity = () => {
     Error,
     Partial<Activity>
   >({
-    mutationFn: (activityData) => trackerServices.createActivity(activityData),
+    mutationFn: (activityData) => supabaseCreateActivity(activityData),
     onSuccess: () => {
       toast.success("Activity added");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.CATEGORIES] });
@@ -113,7 +134,7 @@ const useUpdateActivity = () => {
     Error,
     { id: string; data: Partial<Activity> }
   >({
-    mutationFn: ({ id, data }) => trackerServices.updateActivity(id, data),
+    mutationFn: ({ id, data }) => supabaseUpdateActivity(id, data),
     onSuccess: () => {
       toast.success("Activity updated");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.CATEGORIES] });
@@ -129,7 +150,7 @@ const useDeleteActivity = () => {
   const queryClient = useQueryClient();
 
   return useMutation<ApiResponse<{ deletedId: string }>, Error, string>({
-    mutationFn: (id) => trackerServices.deleteActivity(id),
+    mutationFn: (id) => supabaseDeleteActivity(id),
     onSuccess: () => {
       toast.success("Activity removed");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.CATEGORIES] });
@@ -146,7 +167,7 @@ const useActiveTimer = () => {
     ApiResponse<{ activeTimer: ActiveTimer }>
   >({
     queryKey: [TRACKER_KEYS.ACTIVE_TIMER],
-    queryFn: () => trackerServices.getActiveTimer(),
+    queryFn: () => supabaseGetActiveTimer(),
     staleTime: 1000 * 30, // 30s
   });
 
@@ -172,7 +193,7 @@ const useSaveChunk = () => {
       notes?: string | null;
     }
   >({
-    mutationFn: (chunkData) => trackerServices.saveChunk(chunkData),
+    mutationFn: (chunkData) => supabaseSaveChunk(chunkData),
     onSuccess: () => {
       toast.success("Log recorded!");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.ACTIVE_TIMER] });
@@ -199,7 +220,7 @@ const useSwitchTimer = () => {
       previous_notes?: string | null;
     }
   >({
-    mutationFn: (switchData) => trackerServices.switchTimer(switchData),
+    mutationFn: (switchData) => supabaseSwitchTimer(switchData),
     onSuccess: () => {
       toast.success("Switched activity!");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.ACTIVE_TIMER] });
@@ -223,7 +244,7 @@ const useStartTimer = () => {
       title?: string;
     }
   >({
-    mutationFn: (startData) => trackerServices.startTimer(startData),
+    mutationFn: (startData) => supabaseStartTimer(startData),
     onSuccess: () => {
       toast.success("Timer started!");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.ACTIVE_TIMER] });
@@ -240,12 +261,13 @@ const useStopTimer = () => {
   return useMutation<
     ApiResponse<{ savedLog: TimeLog | null; activeTimer: ActiveTimer }>,
     Error,
-    {
-      notes?: string | null;
-      title?: string;
-    } | undefined
+    | {
+        notes?: string | null;
+        title?: string;
+      }
+    | undefined
   >({
-    mutationFn: (stopData) => trackerServices.stopTimer(stopData),
+    mutationFn: (stopData) => supabaseStopTimer(stopData),
     onSuccess: (res) => {
       if (res?.data?.savedLog) {
         toast.success("Log saved to your day summary!");
@@ -267,7 +289,7 @@ const useDaySummary = (date?: string) => {
     ApiResponse<{ logs: TimeLog[]; summary: DaySummary }>
   >({
     queryKey: [TRACKER_KEYS.SUMMARY, date],
-    queryFn: () => trackerServices.getTodaySummary(date),
+    queryFn: () => supabaseGetTodaySummary(date),
     staleTime: 1000 * 30, // 30s
   });
 
@@ -285,7 +307,7 @@ const useDeleteTimeLog = () => {
   const queryClient = useQueryClient();
 
   return useMutation<ApiResponse<{ deletedId: string }>, Error, string>({
-    mutationFn: (id) => trackerServices.deleteTimeLog(id),
+    mutationFn: (id) => supabaseDeleteTimeLog(id),
     onSuccess: () => {
       toast.success("Log removed");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.SUMMARY] });
