@@ -1,12 +1,66 @@
 import { supabase } from "../config/supabase.js";
 import { ApiError } from "../utils/ApiError.js";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc.js";
+import timezone from "dayjs/plugin/timezone.js";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
 import {
   CATEGORY_SELECT,
   ACTIVITY_SELECT,
   TIME_LOG_SELECT,
   ACTIVE_TIMER_SELECT,
 } from "../constants/tracker.js";
+
+/**
+ * Splits a time range into midnight-bounded chunks based on a specific timezone.
+ * e.g., if a session runs from 11:30 PM (Oct 9) to 1:30 AM (Oct 10), it produces:
+ * - Chunk 1: 11:30 PM to 12:00 AM (1800s) on Oct 9
+ * - Chunk 2: 12:00 AM to 1:30 AM (5400s) on Oct 10
+ */
+export const splitIntervalByMidnight = (
+  startIso,
+  endIso,
+  tz = "Asia/Dhaka"
+) => {
+  const start = dayjs(startIso);
+  const end = dayjs(endIso);
+  if (!start.isValid() || !end.isValid() || end.isBefore(start)) return [];
+
+  const chunks = [];
+  let currentStart = start;
+
+  while (currentStart.isBefore(end)) {
+    const currentTz = currentStart.tz(tz);
+    const nextMidnight = currentTz.endOf("day").add(1, "millisecond");
+
+    if (nextMidnight.isBefore(end)) {
+      const durSec = Math.round(nextMidnight.diff(currentStart, "second", true));
+      if (durSec > 0) {
+        chunks.push({
+          started_at: currentStart.toISOString(),
+          ended_at: nextMidnight.toISOString(),
+          duration_seconds: durSec,
+        });
+      }
+      currentStart = nextMidnight;
+    } else {
+      const durSec = Math.round(end.diff(currentStart, "second", true));
+      if (durSec > 0) {
+        chunks.push({
+          started_at: currentStart.toISOString(),
+          ended_at: end.toISOString(),
+          duration_seconds: durSec,
+        });
+      }
+      break;
+    }
+  }
+
+  return chunks;
+};
 
 // Helper: Provision starter categories ('Study' with Course 1-5 and 'Others' with Rest, Meal, Break) ONLY on user registration
 export const provisionNewUserStarterData = async (userId) => {
@@ -420,48 +474,47 @@ const getActiveTimerService = async (userId) => {
 };
 
 // Save a chunk from the ongoing timer and reset timer to NOW
-const saveChunkService = async (userId, chunkData) => {
+const saveChunkService = async (userId, chunkData, tz = "Asia/Dhaka") => {
   const { title, category_id, activity_id = null, notes = null } = chunkData;
 
   const { activeTimer } = await getActiveTimerService(userId);
 
   const now = new Date().toISOString();
-  const startTime = new Date(activeTimer.started_at);
-  const endTime = new Date(now);
-  const durationSeconds = Math.max(
-    0,
-    Math.round((endTime.getTime() - startTime.getTime()) / 1000)
-  );
-
   let savedLog = null;
   const targetCategoryId = category_id || activeTimer.category_id;
   const logTitle = title?.trim() || activeTimer.title || "Others";
+  let elapsedSeconds = 0;
 
-  // Only create a log if at least a few seconds elapsed
-  if (durationSeconds > 0 && targetCategoryId) {
-    const { data: inserted, error: insertError } = await supabase
-      .from("time_logs")
-      .insert({
+  // Split across midnight if needed
+  if (targetCategoryId && activeTimer.started_at) {
+    const chunks = splitIntervalByMidnight(activeTimer.started_at, now, tz);
+    if (chunks.length > 0) {
+      elapsedSeconds = chunks.reduce((sum, c) => sum + c.duration_seconds, 0);
+      const rows = chunks.map((c) => ({
         user_id: userId,
         category_id: targetCategoryId,
         activity_id: activity_id || activeTimer.activity_id || null,
         title: logTitle,
-        started_at: activeTimer.started_at,
-        ended_at: now,
-        duration_seconds: durationSeconds,
+        started_at: c.started_at,
+        ended_at: c.ended_at,
+        duration_seconds: c.duration_seconds,
         is_wasted: false,
         notes: notes || null,
-      })
-      .select(TIME_LOG_SELECT)
-      .single();
+      }));
 
-    if (insertError) {
-      throw new ApiError(
-        500,
-        insertError.message || "Failed to record time chunk."
-      );
+      const { data: inserted, error: insertError } = await supabase
+        .from("time_logs")
+        .insert(rows)
+        .select(TIME_LOG_SELECT);
+
+      if (insertError) {
+        throw new ApiError(
+          500,
+          insertError.message || "Failed to record time chunk."
+        );
+      }
+      savedLog = inserted && inserted.length > 0 ? inserted[inserted.length - 1] : null;
     }
-    savedLog = inserted;
   }
 
   // Reset active timer started_at to NOW
@@ -481,14 +534,14 @@ const saveChunkService = async (userId, chunkData) => {
 
   const meta = {
     action: "SAVE_CHUNK",
-    elapsedSeconds: durationSeconds,
+    elapsedSeconds,
   };
 
   return { savedLog, activeTimer: updatedTimer, meta };
 };
 
 // Seamless switch to another activity (e.g. starting Namaz or Course)
-const switchTimerService = async (userId, switchData) => {
+const switchTimerService = async (userId, switchData, tz = "Asia/Dhaka") => {
   const {
     category_id,
     activity_id = null,
@@ -507,36 +560,31 @@ const switchTimerService = async (userId, switchData) => {
 
   let savedLog = null;
 
-  // Save the preceding interval if requested
-  if (save_previous) {
-    const startTime = new Date(activeTimer.started_at);
-    const endTime = new Date(now);
-    const durationSeconds = Math.max(
-      0,
-      Math.round((endTime.getTime() - startTime.getTime()) / 1000)
-    );
+  // Save the preceding interval if requested (splitting across midnight if needed)
+  if (save_previous && activeTimer.category_id && activeTimer.started_at) {
+    const prevTitle = previous_title?.trim() || activeTimer.title || "Others";
+    const chunks = splitIntervalByMidnight(activeTimer.started_at, now, tz);
 
-    if (durationSeconds > 0 && activeTimer.category_id) {
-      const prevTitle = previous_title?.trim() || activeTimer.title || "Others";
+    if (chunks.length > 0) {
+      const rows = chunks.map((c) => ({
+        user_id: userId,
+        category_id: activeTimer.category_id,
+        activity_id: activeTimer.activity_id || null,
+        title: prevTitle,
+        started_at: c.started_at,
+        ended_at: c.ended_at,
+        duration_seconds: c.duration_seconds,
+        is_wasted: false,
+        notes: previous_notes || null,
+      }));
 
       const { data: inserted, error: insertError } = await supabase
         .from("time_logs")
-        .insert({
-          user_id: userId,
-          category_id: activeTimer.category_id,
-          activity_id: activeTimer.activity_id || null,
-          title: prevTitle,
-          started_at: activeTimer.started_at,
-          ended_at: now,
-          duration_seconds: durationSeconds,
-          is_wasted: false,
-          notes: previous_notes || null,
-        })
-        .select(TIME_LOG_SELECT)
-        .single();
+        .insert(rows)
+        .select(TIME_LOG_SELECT);
 
-      if (!insertError) {
-        savedLog = inserted;
+      if (!insertError && inserted && inserted.length > 0) {
+        savedLog = inserted[inserted.length - 1];
       }
     }
   }
@@ -611,7 +659,8 @@ const startTimerService = async (
 // Stop timer and record time log
 const stopTimerService = async (
   userId,
-  { notes = null, title = null } = {}
+  { notes = null, title = null } = {},
+  tz = "Asia/Dhaka"
 ) => {
   const { activeTimer } = await getActiveTimerService(userId);
   const now = new Date().toISOString();
@@ -619,34 +668,31 @@ const stopTimerService = async (
   let savedLog = null;
   let durationSeconds = 0;
 
-  if (activeTimer.is_running && activeTimer.started_at) {
-    const startTime = new Date(activeTimer.started_at);
-    const endTime = new Date(now);
-    durationSeconds = Math.max(
-      0,
-      Math.round((endTime.getTime() - startTime.getTime()) / 1000)
-    );
+  if (activeTimer.is_running && activeTimer.started_at && activeTimer.category_id) {
+    const logTitle = title?.trim() || activeTimer.title || "Task";
+    const chunks = splitIntervalByMidnight(activeTimer.started_at, now, tz);
 
-    if (durationSeconds > 0 && activeTimer.category_id) {
-      const logTitle = title?.trim() || activeTimer.title || "Task";
+    if (chunks.length > 0) {
+      durationSeconds = chunks.reduce((sum, c) => sum + c.duration_seconds, 0);
+      const rows = chunks.map((c) => ({
+        user_id: userId,
+        category_id: activeTimer.category_id,
+        activity_id: activeTimer.activity_id || null,
+        title: logTitle,
+        started_at: c.started_at,
+        ended_at: c.ended_at,
+        duration_seconds: c.duration_seconds,
+        is_wasted: false,
+        notes: notes || null,
+      }));
+
       const { data: inserted, error: insertError } = await supabase
         .from("time_logs")
-        .insert({
-          user_id: userId,
-          category_id: activeTimer.category_id,
-          activity_id: activeTimer.activity_id || null,
-          title: logTitle,
-          started_at: activeTimer.started_at,
-          ended_at: now,
-          duration_seconds: durationSeconds,
-          is_wasted: false,
-          notes: notes || null,
-        })
-        .select(TIME_LOG_SELECT)
-        .single();
+        .insert(rows)
+        .select(TIME_LOG_SELECT);
 
-      if (!insertError) {
-        savedLog = inserted;
+      if (!insertError && inserted && inserted.length > 0) {
+        savedLog = inserted[inserted.length - 1];
       }
     }
   }
@@ -675,10 +721,10 @@ const stopTimerService = async (
 // ==========================================
 // 3. LOGS & DAILY SUMMARY
 // ==========================================
-const getTodaySummaryService = async (userId, queryDate) => {
-  const targetDate = queryDate || dayjs().format("YYYY-MM-DD");
-  const startOfDay = dayjs(targetDate).startOf("day").toISOString();
-  const endOfDay = dayjs(targetDate).endOf("day").toISOString();
+const getTodaySummaryService = async (userId, queryDate, tz = "Asia/Dhaka") => {
+  const targetDate = queryDate || dayjs().tz(tz).format("YYYY-MM-DD");
+  const startOfDay = dayjs.tz(targetDate, tz).startOf("day").toISOString();
+  const endOfDay = dayjs.tz(targetDate, tz).endOf("day").toISOString();
 
   // Fetch all logs recorded for target date
   const { data: logs, error } = await supabase

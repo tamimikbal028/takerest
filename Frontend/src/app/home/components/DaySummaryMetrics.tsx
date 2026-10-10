@@ -9,6 +9,7 @@ export const DaySummaryMetrics = ({ summary }: DaySummaryMetricsProps) => {
   const totalTrackedSeconds = summary?.totalTrackedSeconds ?? 0;
 
   const formatHoursMins = (secs: number) => {
+    if (secs < 60) return `${secs}s`;
     const hrs = Math.floor(secs / 3600);
     const mins = Math.floor((secs % 3600) / 60);
     if (hrs === 0) return `${mins}m`;

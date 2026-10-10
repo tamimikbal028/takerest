@@ -180,7 +180,11 @@ export const ContinuousTimerWidget = ({
   const activeColor = activeCategory?.color || "#3B82F6";
 
   return (
-    <div className="relative rounded-3xl border border-gray-200 bg-white p-5 shadow-xs sm:p-7">
+    <div
+      className={`relative rounded-3xl border border-gray-200 bg-white p-5 shadow-xs transition-all sm:p-7 ${
+        isDropdownOpen ? "z-30" : "z-10"
+      }`}
+    >
       {/* Background glow when active - contained inside its own overflow-hidden layer */}
       {isRunning && (
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">

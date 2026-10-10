@@ -3,11 +3,19 @@ import { DayTimeline24h } from "./components/DayTimeline24h";
 import trackerHooks from "@/hooks/useTracker";
 import authHooks from "@/hooks/useAuth";
 
+const getLocalDateString = (d: Date = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 const Home = () => {
   const { user } = authHooks.useUser();
   const { categories, isLoading: isCatLoading } = trackerHooks.useCategories();
   const { isLoading: isTimerLoading } = trackerHooks.useActiveTimer();
-  const { logs, isLoading: isSummaryLoading } = trackerHooks.useDaySummary();
+  const todayStr = getLocalDateString();
+  const { logs, isLoading: isSummaryLoading } = trackerHooks.useDaySummary(todayStr);
 
   if (isCatLoading || isTimerLoading || isSummaryLoading) {
     return (

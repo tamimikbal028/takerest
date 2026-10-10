@@ -117,11 +117,15 @@ const getActiveTimer = AsyncHandler(async (req, res) => {
     );
 });
 
+const getTimezone = (req) =>
+  req.headers["x-timezone"] || req.query.timezone || req.body?.timezone || "Asia/Dhaka";
+
 const saveChunk = AsyncHandler(async (req, res) => {
   const userId = req.user.id;
   const chunkData = req.body;
+  const tz = getTimezone(req);
   const { savedLog, activeTimer, meta } =
-    await trackerServices.saveChunkService(userId, chunkData);
+    await trackerServices.saveChunkService(userId, chunkData, tz);
 
   return res
     .status(200)
@@ -137,8 +141,9 @@ const saveChunk = AsyncHandler(async (req, res) => {
 const switchTimer = AsyncHandler(async (req, res) => {
   const userId = req.user.id;
   const switchData = req.body;
+  const tz = getTimezone(req);
   const { savedLog, activeTimer, meta } =
-    await trackerServices.switchTimerService(userId, switchData);
+    await trackerServices.switchTimerService(userId, switchData, tz);
 
   return res
     .status(200)
@@ -171,8 +176,9 @@ const startTimer = AsyncHandler(async (req, res) => {
 const stopTimer = AsyncHandler(async (req, res) => {
   const userId = req.user.id;
   const stopData = req.body;
+  const tz = getTimezone(req);
   const { savedLog, activeTimer, meta } =
-    await trackerServices.stopTimerService(userId, stopData);
+    await trackerServices.stopTimerService(userId, stopData, tz);
 
   return res
     .status(200)
@@ -189,8 +195,9 @@ const stopTimer = AsyncHandler(async (req, res) => {
 const getTodaySummary = AsyncHandler(async (req, res) => {
   const userId = req.user.id;
   const date = req.query.date;
+  const tz = getTimezone(req);
   const { logs, summary, meta } =
-    await trackerServices.getTodaySummaryService(userId, date);
+    await trackerServices.getTodaySummaryService(userId, date, tz);
 
   return res
     .status(200)

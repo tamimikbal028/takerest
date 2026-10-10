@@ -31,6 +31,19 @@ const api = axios.create({
   timeout: 15000, // 15 seconds
 });
 
+// Request interceptor to automatically provide user's local timezone
+api.interceptors.request.use((config) => {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz) {
+      config.headers["x-timezone"] = tz;
+    }
+  } catch {
+    // ignore
+  }
+  return config;
+});
+
 /**
  * ====================================
  * AUTO TOKEN REFRESH LOGIC
