@@ -110,7 +110,7 @@ export const DayTimeline24h = ({ logs }: DayTimeline24hProps) => {
           </div>
 
           {/* Hour markers */}
-          <div className="relative mb-1.5 h-3.5 select-none text-[10px] font-bold text-gray-400">
+          <div className="relative mb-1.5 h-3.5 text-[10px] font-bold text-gray-400 select-none">
             <span className="absolute left-0">12 AM</span>
             <span className="absolute left-1/4 -translate-x-1/2">3 AM</span>
             <span className="absolute left-2/4 -translate-x-1/2">6 AM</span>
@@ -163,7 +163,7 @@ export const DayTimeline24h = ({ logs }: DayTimeline24hProps) => {
           </div>
 
           {/* Hour markers */}
-          <div className="relative mb-1.5 h-3.5 select-none text-[10px] font-bold text-gray-400">
+          <div className="relative mb-1.5 h-3.5 text-[10px] font-bold text-gray-400 select-none">
             <span className="absolute left-0">12 PM</span>
             <span className="absolute left-1/4 -translate-x-1/2">3 PM</span>
             <span className="absolute left-2/4 -translate-x-1/2">6 PM</span>
@@ -266,7 +266,7 @@ export const DayTimeline24h = ({ logs }: DayTimeline24hProps) => {
 
                 {/* Right side: duration + delete action */}
                 <div className="flex shrink-0 items-center gap-2 pl-1 sm:gap-3 sm:pl-2">
-                  <span className="font-mono text-xs font-bold text-gray-900 whitespace-nowrap sm:text-sm">
+                  <span className="font-mono text-xs font-bold whitespace-nowrap text-gray-900 sm:text-sm">
                     {formatHoursMins(log.duration_seconds)}
                   </span>
                   <button
@@ -275,7 +275,7 @@ export const DayTimeline24h = ({ logs }: DayTimeline24hProps) => {
                         deleteTimeLog(log.id);
                       }
                     }}
-                    className="cursor-pointer rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500 active:scale-95 shrink-0"
+                    className="shrink-0 cursor-pointer rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500 active:scale-95"
                     title="Delete log"
                   >
                     <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
