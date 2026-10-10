@@ -53,7 +53,6 @@ const useRegister = () => {
       authServices.register(registerData),
     onSuccess: (response) => {
       queryClient.setQueryData([AUTH_KEYS.CURRENT_USER], response.data);
-      toast.success(response.message);
       navigate("/");
     },
     onError: (error: unknown) => {
@@ -72,7 +71,6 @@ const useLogin = () => {
     mutationFn: (loginData: LoginType) => authServices.login(loginData),
     onSuccess: (response) => {
       queryClient.setQueryData([AUTH_KEYS.CURRENT_USER], response.data);
-      toast.success(response.message);
 
       // Extract original path from location state
       const state = location.state as { from?: Location };
@@ -92,10 +90,9 @@ const useLogout = () => {
 
   return useMutation({
     mutationFn: () => authServices.logout(),
-    onSuccess: (response) => {
+    onSuccess: () => {
       queryClient.setQueryData([AUTH_KEYS.CURRENT_USER], null);
       queryClient.removeQueries({ queryKey: [AUTH_KEYS.CURRENT_USER] });
-      toast.success(response?.message || "Signed out successfully");
       navigate("/login");
     },
     onError: (error: unknown) => {

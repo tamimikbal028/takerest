@@ -61,7 +61,6 @@ const useCreateCategory = () => {
   >({
     mutationFn: (categoryData) => supabaseCreateCategory(categoryData),
     onSuccess: () => {
-      toast.success("Group created successfully");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.CATEGORIES] });
     },
     onError: (err) => {
@@ -80,7 +79,6 @@ const useUpdateCategory = () => {
   >({
     mutationFn: ({ id, data }) => supabaseUpdateCategory(id, data),
     onSuccess: () => {
-      toast.success("Group updated");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.CATEGORIES] });
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.SUMMARY] });
     },
@@ -96,7 +94,6 @@ const useDeleteCategory = () => {
   return useMutation<ApiResponse<{ deletedId: string }>, Error, string>({
     mutationFn: (id) => supabaseDeleteCategory(id),
     onSuccess: () => {
-      toast.success("Group removed");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.CATEGORIES] });
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.SUMMARY] });
     },
@@ -117,7 +114,6 @@ const useCreateActivity = () => {
   >({
     mutationFn: (activityData) => supabaseCreateActivity(activityData),
     onSuccess: () => {
-      toast.success("Activity added");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.CATEGORIES] });
     },
     onError: (err) => {
@@ -136,7 +132,6 @@ const useUpdateActivity = () => {
   >({
     mutationFn: ({ id, data }) => supabaseUpdateActivity(id, data),
     onSuccess: () => {
-      toast.success("Activity updated");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.CATEGORIES] });
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.SUMMARY] });
     },
@@ -152,7 +147,6 @@ const useDeleteActivity = () => {
   return useMutation<ApiResponse<{ deletedId: string }>, Error, string>({
     mutationFn: (id) => supabaseDeleteActivity(id),
     onSuccess: () => {
-      toast.success("Activity removed");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.CATEGORIES] });
     },
     onError: (err) => {
@@ -195,7 +189,6 @@ const useSaveChunk = () => {
   >({
     mutationFn: (chunkData) => supabaseSaveChunk(chunkData),
     onSuccess: () => {
-      toast.success("Log recorded!");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.ACTIVE_TIMER] });
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.SUMMARY] });
     },
@@ -222,7 +215,6 @@ const useSwitchTimer = () => {
   >({
     mutationFn: (switchData) => supabaseSwitchTimer(switchData),
     onSuccess: () => {
-      toast.success("Switched activity!");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.ACTIVE_TIMER] });
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.SUMMARY] });
     },
@@ -246,7 +238,6 @@ const useStartTimer = () => {
   >({
     mutationFn: (startData) => supabaseStartTimer(startData),
     onSuccess: () => {
-      toast.success("Timer started!");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.ACTIVE_TIMER] });
     },
     onError: (err) => {
@@ -268,12 +259,7 @@ const useStopTimer = () => {
     | undefined
   >({
     mutationFn: (stopData) => supabaseStopTimer(stopData),
-    onSuccess: (res) => {
-      if (res?.data?.savedLog) {
-        toast.success("Log saved to your day summary!");
-      } else {
-        toast.info("Timer stopped");
-      }
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.ACTIVE_TIMER] });
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.SUMMARY] });
     },
@@ -309,7 +295,6 @@ const useDeleteTimeLog = () => {
   return useMutation<ApiResponse<{ deletedId: string }>, Error, string>({
     mutationFn: (id) => supabaseDeleteTimeLog(id),
     onSuccess: () => {
-      toast.success("Log removed");
       queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.SUMMARY] });
     },
     onError: (err) => {
