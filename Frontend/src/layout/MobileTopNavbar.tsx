@@ -14,19 +14,19 @@ interface MobileTopNavbarProps {
 const MobileTopNavbar = ({ onToggleSidebar }: MobileTopNavbarProps) => {
   const navItems = [
     {
-      to: "/",
-      icon: LayoutDashboard,
-      label: "Home",
-    },
-    {
       to: "/activities",
       icon: CheckSquare,
       label: "Activities",
     },
     {
+      to: "/",
+      icon: LayoutDashboard,
+      label: "Home",
+    },
+    {
       to: "/statistics",
       icon: BarChart3,
-      label: "Statistics",
+      label: "Stats",
     },
     {
       to: "/settings",

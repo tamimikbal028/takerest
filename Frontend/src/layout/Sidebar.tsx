@@ -18,16 +18,16 @@ const Sidebar = ({ onClose }: SidebarProps) => {
       active: location.pathname === "/",
     },
     {
-      icon: CheckSquare,
-      label: "Activities",
-      path: "/activities",
-      active: location.pathname.startsWith("/activities"),
-    },
-    {
       icon: BarChart3,
       label: "Statistics",
       path: "/statistics",
       active: location.pathname.startsWith("/statistics"),
+    },
+    {
+      icon: CheckSquare,
+      label: "Activities",
+      path: "/activities",
+      active: location.pathname.startsWith("/activities"),
     },
     {
       icon: Settings,
