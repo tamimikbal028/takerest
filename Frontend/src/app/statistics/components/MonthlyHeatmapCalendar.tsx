@@ -93,11 +93,10 @@ const getStudyHeatmapLevel = (seconds: number) => {
 };
 
 const LEGEND_ITEMS = [
-  { level: 0, label: "0h", range: "0m" },
-  { level: 1, label: ">0–3h", range: "1m – 3h" },
-  { level: 2, label: "3–6h", range: "3h – 6h" },
-  { level: 3, label: "6–9h", range: "6h – 9h" },
-  { level: 4, label: "9–12h", range: "9h – 12h" },
+  { level: 1, label: ">0 – 3h", range: "1m – 3h" },
+  { level: 2, label: "3 – 6h", range: "3h – 6h" },
+  { level: 3, label: "6 – 9h", range: "6h – 9h" },
+  { level: 4, label: "9 – 12h", range: "9h – 12h" },
   { level: 5, label: "12h+", range: "12h+" },
 ];
 
@@ -219,12 +218,12 @@ export const MonthlyHeatmapCalendar = ({
       {/* 1. Header with Title & Month Switcher */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center justify-between gap-2.5 sm:justify-start">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 shadow-2xs">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 shadow-2xs sm:h-10 sm:w-10">
               <BookOpen className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-sm font-bold text-gray-900 sm:text-lg truncate">
+              <h2 className="truncate text-sm font-bold text-gray-900 sm:text-lg">
                 Study Heatmap
               </h2>
               <p className="text-[11px] text-gray-400 sm:text-xs">
@@ -233,7 +232,7 @@ export const MonthlyHeatmapCalendar = ({
             </div>
           </div>
 
-          <span className="shrink-0 whitespace-nowrap inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] sm:text-[11px] font-bold text-emerald-700">
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold whitespace-nowrap text-emerald-700 sm:text-[11px]">
             <Sparkles className="h-3 w-3 shrink-0" />
             Study Only
           </span>
@@ -245,7 +244,7 @@ export const MonthlyHeatmapCalendar = ({
             <button
               type="button"
               onClick={handleJumpToThisMonth}
-              className="cursor-pointer rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 active:scale-95 shrink-0"
+              className="shrink-0 cursor-pointer rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 active:scale-95"
             >
               This Month
             </button>
@@ -261,7 +260,7 @@ export const MonthlyHeatmapCalendar = ({
               <ChevronLeft className="h-4 w-4" />
             </button>
 
-            <span className="min-w-[115px] sm:min-w-[130px] px-2 sm:px-3 text-center font-mono text-xs font-bold text-gray-900 sm:text-sm">
+            <span className="min-w-[115px] px-2 text-center font-mono text-xs font-bold text-gray-900 sm:min-w-[130px] sm:px-3 sm:text-sm">
               {monthName}
             </span>
 
@@ -399,12 +398,12 @@ export const MonthlyHeatmapCalendar = ({
                   type="button"
                   onClick={() => onSelectDate(dateStr)}
                   title={tooltipText}
-                  className={`group relative flex h-14 cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border p-1.5 text-left transition-all duration-200 active:scale-95 sm:h-16 sm:p-2 ${
+                  className={`group relative flex h-14 cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border p-1.5 text-left transition-colors duration-150 sm:h-16 sm:p-2 ${
                     heatmap.bgClass
                   } ${heatmap.borderClass} ${
                     isSelected
-                      ? "z-10 scale-[1.03] border-purple-600 shadow-md ring-3 ring-purple-600 ring-offset-2"
-                      : "hover:scale-[1.02] hover:shadow-2xs"
+                      ? "z-10 border-purple-600 shadow-md ring-3 ring-purple-600 ring-offset-2"
+                      : "hover:shadow-2xs"
                   }`}
                 >
                   {/* Top: Day Number & Today Indicator */}
@@ -445,7 +444,7 @@ export const MonthlyHeatmapCalendar = ({
                     >
                       {studySeconds > 0
                         ? formatDurationShort(studySeconds)
-                        : "0m"}
+                        : ""}
                     </span>
 
                     {/* Small badge dot for 12h+ peak */}
@@ -460,21 +459,14 @@ export const MonthlyHeatmapCalendar = ({
         )}
       </div>
 
-      {/* 4. Legend Bar: Exactly 3-Hour Interval Progression */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 p-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-1.5 text-xs text-gray-500">
-          <span className="font-semibold text-gray-700">Study Intensity:</span>
-          <span className="text-[11px] text-gray-400">
-            (3-hour interval steps up to 12h+)
-          </span>
-        </div>
+      {/* 4. Legend Bar: Full Width 3-Hour Interval Progression */}
+      <div className="flex w-full items-center gap-1.5 rounded-2xl border border-gray-100 bg-gray-50/60 p-2 sm:gap-2.5 sm:p-3">
+        <span className="shrink-0 text-[10px] font-bold text-gray-400 sm:text-xs">
+          Less
+        </span>
 
-        {/* Legend color swatches */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-[11px] font-medium text-gray-400">
-            Less
-          </span>
-
+        {/* Legend color swatches distributed across full width */}
+        <div className="grid flex-1 grid-cols-5 gap-1 sm:gap-2">
           {LEGEND_ITEMS.map((item) => {
             const h = getStudyHeatmapLevel(
               item.level === 0
@@ -493,18 +485,18 @@ export const MonthlyHeatmapCalendar = ({
             return (
               <div
                 key={item.level}
-                className={`flex items-center gap-1 rounded-xl border px-2 py-1 text-[11px] font-bold shadow-2xs ${h.legendClass}`}
+                className={`flex items-center justify-center rounded-xl border px-0.5 py-1.5 text-center text-[9px] font-bold shadow-2xs sm:text-xs ${h.legendClass}`}
                 title={`Level ${item.level}: ${item.range}`}
               >
-                <span>{item.label}</span>
+                <span className="truncate">{item.label}</span>
               </div>
             );
           })}
-
-          <span className="ml-1 text-[11px] font-medium text-gray-400">
-            More
-          </span>
         </div>
+
+        <span className="shrink-0 text-[10px] font-bold text-gray-400 sm:text-xs">
+          More
+        </span>
       </div>
     </div>
   );
