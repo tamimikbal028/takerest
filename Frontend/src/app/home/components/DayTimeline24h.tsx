@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Trash2, Calendar, Sun, Moon } from "lucide-react";
 import trackerHooks from "@/hooks/useTracker";
 import type { TimeLog } from "@/types";
@@ -18,6 +19,14 @@ interface BarSlice {
 
 export const DayTimeline24h = ({ logs }: DayTimeline24hProps) => {
   const { mutate: deleteTimeLog } = trackerHooks.useDeleteTimeLog();
+
+  // Sort logs in reverse chronological order (most recent on top)
+  const sortedLogs = useMemo(() => {
+    return [...logs].sort(
+      (a, b) =>
+        new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+    );
+  }, [logs]);
 
   const formatHoursMins = (secs: number) => {
     if (secs < 60) return `${secs}s`;
@@ -138,7 +147,7 @@ export const DayTimeline24h = ({ logs }: DayTimeline24hProps) => {
             {amSlices.map((slice, idx) => (
               <div
                 key={`${slice.logId}-am-${idx}`}
-                className="group absolute top-0 bottom-0 z-10 transition-all hover:shadow-xs hover:brightness-110"
+                className="group absolute top-0 bottom-0 z-10 transition-all hover:shadow-xs hover:brightness-10"
                 style={{
                   left: `${slice.leftPercent}%`,
                   width: `${slice.widthPercent}%`,
@@ -191,7 +200,7 @@ export const DayTimeline24h = ({ logs }: DayTimeline24hProps) => {
             {pmSlices.map((slice, idx) => (
               <div
                 key={`${slice.logId}-pm-${idx}`}
-                className="group absolute top-0 bottom-0 z-10 cursor-pointer transition-all hover:shadow-xs hover:brightness-110"
+                className="group absolute top-0 bottom-0 z-10 transition-all hover:shadow-xs hover:brightness-10"
                 style={{
                   left: `${slice.leftPercent}%`,
                   width: `${slice.widthPercent}%`,
@@ -212,7 +221,7 @@ export const DayTimeline24h = ({ logs }: DayTimeline24hProps) => {
         </div>
       ) : (
         <div className="divide-y divide-gray-100">
-          {logs.map((log) => {
+          {sortedLogs.map((log) => {
             const categoryName = log.categories?.name || "Others";
             const categoryColor = log.categories?.color || "#64748B";
 
