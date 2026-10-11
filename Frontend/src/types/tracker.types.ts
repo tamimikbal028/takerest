@@ -104,3 +104,23 @@ export interface DaySummary {
   totalLogsCount?: number;
   categoryBreakdown: CategoryBreakdown[];
 }
+
+export interface MonthStudyDay {
+  date: string;
+  studySeconds: number;
+  studyLogsCount: number;
+}
+
+export interface MonthStudySummary {
+  year: number;
+  month: number;
+  totalStudySeconds: number;
+  totalStudyLogsCount: number;
+  activeStudyDaysCount: number;
+  days: Record<string, MonthStudyDay>;
+  peakDay: {
+    date: string;
+    studySeconds: number;
+  } | null;
+}
+

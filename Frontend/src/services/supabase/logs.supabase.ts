@@ -1,6 +1,12 @@
 import { supabase, getActiveUserId } from "@/config/supabase";
 import { LOG_SELECT } from "./timer.supabase";
-import type { ApiResponse, TimeLog, DaySummary } from "@/types";
+import type {
+  ApiResponse,
+  TimeLog,
+  DaySummary,
+  MonthStudySummary,
+  MonthStudyDay,
+} from "@/types";
 
 export const supabaseGetTodaySummary = async (
   date?: string
@@ -183,5 +189,123 @@ export const supabaseDeleteTimeLog = async (
     success: true,
     message: "Time log deleted successfully",
     data: { deletedId: id },
+  };
+};
+
+export const supabaseGetMonthStudySummary = async (
+  year: number,
+  month: number
+): Promise<ApiResponse<MonthStudySummary>> => {
+  const userId = await getActiveUserId();
+
+  // 1. Fetch study category ID(s)
+  const { data: categoriesData, error: catError } = await supabase
+    .from("categories")
+    .select("id, name, is_system_default")
+    .eq("user_id", userId);
+
+  if (catError) {
+    throw new Error(catError.message || "Failed to fetch categories");
+  }
+
+  const studyCategoryIds = new Set<string>();
+  (categoriesData || []).forEach((cat) => {
+    if (
+      cat.is_system_default ||
+      cat.name?.trim().toLowerCase() === "study"
+    ) {
+      studyCategoryIds.add(cat.id);
+    }
+  });
+
+  // 2. Query range with 1 day padding on each end to handle timezone shifts
+  const startDate = new Date(year, month - 1, 1 - 1, 0, 0, 0, 0).toISOString();
+  const endDate = new Date(year, month, 1, 23, 59, 59, 999).toISOString();
+
+  const { data: logsData, error } = await supabase
+    .from("time_logs")
+    .select(LOG_SELECT)
+    .eq("user_id", userId)
+    .gte("started_at", startDate)
+    .lte("started_at", endDate)
+    .order("started_at", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message || "Failed to fetch month time logs");
+  }
+
+  const logs = (logsData || []) as unknown as TimeLog[];
+
+  const getLocalDateString = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
+  const monthPrefix = `${year}-${String(month).padStart(2, "0")}`;
+  const daysMap: Record<string, MonthStudyDay> = {};
+
+  // Initialize all days in the month
+  const totalDaysInMonth = new Date(year, month, 0).getDate();
+  for (let day = 1; day <= totalDaysInMonth; day++) {
+    const dateStr = `${monthPrefix}-${String(day).padStart(2, "0")}`;
+    daysMap[dateStr] = {
+      date: dateStr,
+      studySeconds: 0,
+      studyLogsCount: 0,
+    };
+  }
+
+  let totalStudySeconds = 0;
+  let totalStudyLogsCount = 0;
+
+  logs.forEach((log) => {
+    // Only count logs that belong to the Study category!
+    const isStudy =
+      (log.categories?.name &&
+        log.categories.name.trim().toLowerCase() === "study") ||
+      studyCategoryIds.has(log.category_id);
+
+    if (!isStudy) return;
+
+    const logDate = getLocalDateString(new Date(log.started_at));
+    if (daysMap[logDate]) {
+      const dur = log.duration_seconds || 0;
+      daysMap[logDate].studySeconds += dur;
+      daysMap[logDate].studyLogsCount += 1;
+      totalStudySeconds += dur;
+      totalStudyLogsCount += 1;
+    }
+  });
+
+  let activeStudyDaysCount = 0;
+  let peakDay: { date: string; studySeconds: number } | null = null;
+
+  Object.values(daysMap).forEach((dayData) => {
+    if (dayData.studySeconds > 0) {
+      activeStudyDaysCount += 1;
+      if (!peakDay || dayData.studySeconds > peakDay.studySeconds) {
+        peakDay = {
+          date: dayData.date,
+          studySeconds: dayData.studySeconds,
+        };
+      }
+    }
+  });
+
+  return {
+    statusCode: 200,
+    success: true,
+    message: "Month study summary fetched successfully",
+    data: {
+      year,
+      month,
+      totalStudySeconds,
+      totalStudyLogsCount,
+      activeStudyDaysCount,
+      days: daysMap,
+      peakDay,
+    },
   };
 };

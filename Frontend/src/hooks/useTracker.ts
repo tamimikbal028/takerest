@@ -21,6 +21,7 @@ import {
 import {
   supabaseGetTodaySummary,
   supabaseDeleteTimeLog,
+  supabaseGetMonthStudySummary,
 } from "@/services/supabase/logs.supabase";
 import { TRACKER_KEYS } from "@/constants/queryKeys";
 import type {
@@ -30,6 +31,7 @@ import type {
   TimeLog,
   ActiveTimer,
   DaySummary,
+  MonthStudySummary,
 } from "@/types";
 
 // 1. Categories Hook
@@ -303,6 +305,24 @@ const useDeleteTimeLog = () => {
   });
 };
 
+const useMonthStudySummary = (year: number, month: number) => {
+  const { data, isLoading, isError, error, refetch } = useQuery<
+    ApiResponse<MonthStudySummary>
+  >({
+    queryKey: [TRACKER_KEYS.SUMMARY, "month-study", year, month],
+    queryFn: () => supabaseGetMonthStudySummary(year, month),
+    staleTime: 1000 * 30, // 30s
+  });
+
+  return {
+    monthStudySummary: data?.data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  };
+};
+
 const trackerHooks = {
   useCategories,
   useCreateCategory,
@@ -318,6 +338,7 @@ const trackerHooks = {
   useSwitchTimer,
   useDaySummary,
   useDeleteTimeLog,
+  useMonthStudySummary,
 } as const;
 
 export default trackerHooks;

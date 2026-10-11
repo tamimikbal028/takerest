@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import trackerHooks from "@/hooks/useTracker";
 import { Calendar, ChevronLeft, ChevronRight, Activity, PieChart } from "lucide-react";
+import { MonthlyHeatmapCalendar } from "./components/MonthlyHeatmapCalendar";
 
 const getLocalDateString = (d: Date = new Date()) => {
   const year = d.getFullYear();
@@ -401,7 +402,13 @@ export const StatisticsPage = () => {
         )}
       </div>
 
-      {/* 2. Loading / Error States */}
+      {/* 2. Monthly Study Activity Heatmap */}
+      <MonthlyHeatmapCalendar
+        selectedDate={selectedDate}
+        onSelectDate={(newDate) => setSelectedDate(newDate)}
+      />
+
+      {/* 3. Loading / Error States */}
       {isLoading ? (
         <div className="flex min-h-[250px] flex-col items-center justify-center space-y-4 rounded-3xl border border-gray-200 bg-white p-12">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
