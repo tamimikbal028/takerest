@@ -1,10 +1,21 @@
 import { useMemo } from "react";
-import { Trash2, Calendar, Sun, Moon } from "lucide-react";
+import {
+  Trash2,
+  Calendar,
+  Sun,
+  Moon,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import trackerHooks from "@/hooks/useTracker";
 import type { TimeLog } from "@/types";
 
 interface DayTimeline24hProps {
   logs: TimeLog[];
+  selectedDate?: string;
+  onSelectDate?: (date: string) => void;
+  todayStr?: string;
+  isLoading?: boolean;
 }
 
 interface BarSlice {
@@ -17,8 +28,47 @@ interface BarSlice {
   durationMins: number;
 }
 
-export const DayTimeline24h = ({ logs }: DayTimeline24hProps) => {
+const getLocalDateString = (d: Date = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+export const DayTimeline24h = ({
+  logs,
+  selectedDate,
+  onSelectDate,
+  todayStr,
+  isLoading,
+}: DayTimeline24hProps) => {
   const { mutate: deleteTimeLog } = trackerHooks.useDeleteTimeLog();
+
+  const today = todayStr || getLocalDateString();
+  const activeDate = selectedDate || today;
+  const isToday = activeDate === today;
+
+  const [yearNum, monthNum, dayNum] = activeDate.split("-").map(Number);
+  const dateObj = new Date(yearNum, monthNum - 1, dayNum);
+
+  const formattedDateHeader = dateObj.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+
+  const formattedDateButton = dateObj.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  const handleShiftDate = (days: number) => {
+    if (!onSelectDate) return;
+    const nextDateObj = new Date(yearNum, monthNum - 1, dayNum);
+    nextDateObj.setDate(nextDateObj.getDate() + days);
+    onSelectDate(getLocalDateString(nextDateObj));
+  };
 
   // Sort logs in reverse chronological order (most recent on top)
   const sortedLogs = useMemo(() => {
@@ -91,209 +141,289 @@ export const DayTimeline24h = ({ logs }: DayTimeline24hProps) => {
 
   return (
     <div className="relative z-0 rounded-3xl border border-gray-200 bg-white p-4 shadow-xs sm:p-6">
-      {/* Top Header: Title & Total Logs count */}
-      <div className="flex items-center justify-between pb-3 sm:pb-4">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 shrink-0 text-blue-600" />
-          <h3 className="text-sm font-bold text-gray-900 sm:text-base">
-            Today's 24-Hour Timeline
-          </h3>
+      {/* Top Header: Title & Total Logs count + Date Controller */}
+      <div className="mb-4 flex flex-col gap-3 border-b border-gray-100 pb-3 sm:flex-row sm:items-center sm:justify-between sm:pb-4">
+        <div className="flex items-center justify-between gap-2.5 sm:justify-start">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 shrink-0 text-blue-600" />
+            <h3 className="text-sm font-bold text-gray-900 sm:text-base">
+              {isToday
+                ? "Today's 24-Hour Timeline"
+                : `24-Hour Timeline • ${formattedDateHeader}`}
+            </h3>
+          </div>
+          <span className="shrink-0 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700">
+            {logs.length} {logs.length === 1 ? "log" : "logs"}
+          </span>
         </div>
-        <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700">
-          {logs.length} {logs.length === 1 ? "log" : "logs"}
-        </span>
+
+        {/* Date Selector Row */}
+        {onSelectDate && (
+          <div className="flex items-center justify-between gap-2 sm:justify-end">
+            {!isToday && (
+              <button
+                type="button"
+                onClick={() => onSelectDate(today)}
+                className="shrink-0 cursor-pointer rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 transition hover:bg-blue-100 active:scale-95"
+              >
+                Today
+              </button>
+            )}
+
+            <div className="flex items-center rounded-2xl border border-gray-200 bg-gray-50 p-1 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => handleShiftDate(-1)}
+                title="Previous Day"
+                className="cursor-pointer rounded-xl p-1.5 text-gray-600 transition hover:bg-white hover:text-gray-900 active:scale-95"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              {/* Clickable Middle Date with native date picker */}
+              <div className="group relative flex items-center rounded-xl transition hover:bg-white">
+                <div className="flex cursor-pointer items-center gap-1.5 px-2.5 py-1 font-mono text-xs font-bold text-gray-800 transition group-hover:text-blue-700 sm:text-sm">
+                  <span>{formattedDateButton}</span>
+                </div>
+                <input
+                  type="date"
+                  value={activeDate}
+                  max={today}
+                  onClick={(e) => {
+                    try {
+                      e.currentTarget.showPicker();
+                    } catch {
+                      // Fallback if showPicker is not supported in browser
+                    }
+                  }}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      onSelectDate(e.target.value);
+                    }
+                  }}
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  title="Select Date"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleShiftDate(1)}
+                disabled={isToday}
+                title="Next Day"
+                className="cursor-pointer rounded-xl p-1.5 text-gray-600 transition hover:bg-white hover:text-gray-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* 2-Bar Split Timeline (12h + 12h) */}
-      <div className="mb-6 space-y-4">
-        {/* Bar 1: AM Half (12:00 AM - 12:00 PM) */}
-        <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-3 sm:p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800">
-              <Sun className="h-4 w-4 shrink-0 text-amber-500" />
-              <span>1st Half: 12 AM – 12 PM</span>
-            </div>
-            <span className="rounded-md bg-amber-100/70 px-2 py-0.5 text-xs font-bold text-amber-800">
-              {amSlices.length} {amSlices.length === 1 ? "log" : "logs"}
-            </span>
-          </div>
-
-          {/* Hour markers */}
-          <div className="relative mb-1.5 h-3.5 text-[10px] font-bold text-gray-400 select-none">
-            <span className="absolute left-0">12 AM</span>
-            <span className="absolute left-1/4 -translate-x-1/2">3 AM</span>
-            <span className="absolute left-2/4 -translate-x-1/2">6 AM</span>
-            <span className="absolute left-3/4 -translate-x-1/2">9 AM</span>
-            <span className="absolute right-0">12 PM</span>
-          </div>
-
-          {/* Visual Track */}
-          <div className="relative h-7 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-inner">
-            {/* Hour grid lines (3 AM, 6 AM, 9 AM) */}
-            <div
-              className="pointer-events-none absolute top-0 bottom-0 border-r border-dashed border-gray-200/80"
-              style={{ left: "25%" }}
-            />
-            <div
-              className="pointer-events-none absolute top-0 bottom-0 border-r border-dashed border-gray-200/80"
-              style={{ left: "50%" }}
-            />
-            <div
-              className="pointer-events-none absolute top-0 bottom-0 border-r border-dashed border-gray-200/80"
-              style={{ left: "75%" }}
-            />
-
-            {/* 3. Tracked Slices */}
-            {amSlices.map((slice, idx) => (
-              <div
-                key={`${slice.logId}-am-${idx}`}
-                className="group absolute top-0 bottom-0 z-10 transition-all hover:shadow-xs hover:brightness-10"
-                style={{
-                  left: `${slice.leftPercent}%`,
-                  width: `${slice.widthPercent}%`,
-                  backgroundColor: slice.color,
-                }}
-                title={`${slice.title} - ${slice.categoryName} (${formatHoursMins(Math.round(slice.durationMins * 60))})`}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Bar 2: PM Half (12:00 PM - 12:00 AM) */}
-        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-3 sm:p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-800">
-              <Moon className="h-4 w-4 shrink-0 text-indigo-500" />
-              <span>2nd Half: 12 PM – 12 AM</span>
-            </div>
-            <span className="rounded-md bg-indigo-100/70 px-2 py-0.5 text-xs font-bold text-indigo-800">
-              {pmSlices.length} {pmSlices.length === 1 ? "log" : "logs"}
-            </span>
-          </div>
-
-          {/* Hour markers */}
-          <div className="relative mb-1.5 h-3.5 text-[10px] font-bold text-gray-400 select-none">
-            <span className="absolute left-0">12 PM</span>
-            <span className="absolute left-1/4 -translate-x-1/2">3 PM</span>
-            <span className="absolute left-2/4 -translate-x-1/2">6 PM</span>
-            <span className="absolute left-3/4 -translate-x-1/2">9 PM</span>
-            <span className="absolute right-0">12 AM</span>
-          </div>
-
-          {/* Visual Track */}
-          <div className="relative h-7 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-inner">
-            {/* Hour grid lines (3 PM, 6 PM, 9 PM) */}
-            <div
-              className="pointer-events-none absolute top-0 bottom-0 border-r border-dashed border-gray-200/80"
-              style={{ left: "25%" }}
-            />
-            <div
-              className="pointer-events-none absolute top-0 bottom-0 border-r border-dashed border-gray-200/80"
-              style={{ left: "50%" }}
-            />
-            <div
-              className="pointer-events-none absolute top-0 bottom-0 border-r border-dashed border-gray-200/80"
-              style={{ left: "75%" }}
-            />
-
-            {/* Tracked Slices */}
-            {pmSlices.map((slice, idx) => (
-              <div
-                key={`${slice.logId}-pm-${idx}`}
-                className="group absolute top-0 bottom-0 z-10 transition-all hover:shadow-xs hover:brightness-10"
-                style={{
-                  left: `${slice.leftPercent}%`,
-                  width: `${slice.widthPercent}%`,
-                  backgroundColor: slice.color,
-                }}
-                title={`${slice.title} - ${slice.categoryName} (${formatHoursMins(Math.round(slice.durationMins * 60))})`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Chronological Log History */}
-      {logs.length === 0 ? (
-        <div className="py-8 text-center text-xs font-medium text-gray-400">
-          No logs recorded today yet. When you save chunks or switch activities,
-          they will appear here seamlessly.
+      {isLoading ? (
+        <div className="flex min-h-[180px] flex-col items-center justify-center space-y-3 py-10">
+          <div className="h-7 w-7 animate-spin rounded-full border-3 border-blue-600 border-t-transparent" />
+          <p className="text-xs font-medium text-gray-400">
+            Loading timeline logs...
+          </p>
         </div>
       ) : (
-        <div className="divide-y divide-gray-100">
-          {sortedLogs.map((log) => {
-            const categoryName = log.categories?.name || "Others";
-            const categoryColor = log.categories?.color || "#64748B";
-
-            const startTimeStr = new Date(log.started_at).toLocaleTimeString(
-              [],
-              {
-                hour: "2-digit",
-                minute: "2-digit",
-              }
-            );
-            const endTimeStr = new Date(log.ended_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            });
-
-            return (
-              <div
-                key={log.id}
-                className="flex items-center justify-between gap-3 rounded-xl px-1.5 py-2.5 transition hover:bg-gray-50/80 sm:px-2 sm:py-3"
-              >
-                {/* Left side: indicator + title + details */}
-                <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
-                  {/* Category color bar / indicator */}
-                  <span
-                    className="h-8 w-1 shrink-0 rounded-full sm:h-9 sm:w-1.5"
-                    style={{
-                      backgroundColor: categoryColor,
-                    }}
-                  />
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                      <span className="truncate text-xs font-bold text-gray-900 sm:text-sm">
-                        {log.title}
-                      </span>
-                      <span
-                        className="shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white uppercase sm:px-2 sm:text-[10px]"
-                        style={{ backgroundColor: categoryColor }}
-                      >
-                        {categoryName}
-                      </span>
-                    </div>
-                    <p className="truncate text-[11px] font-medium text-gray-500 sm:text-xs">
-                      <span>
-                        {startTimeStr} - {endTimeStr}
-                      </span>
-                      {log.notes && <span> • {log.notes}</span>}
-                    </p>
-                  </div>
+        <>
+          {/* 2-Bar Split Timeline (12h + 12h) */}
+          <div className="mb-6 space-y-4">
+            {/* Bar 1: AM Half (12:00 AM - 12:00 PM) */}
+            <div className="rounded-2xl border border-amber-100 bg-amber-50/40 p-3 sm:p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800">
+                  <Sun className="h-4 w-4 shrink-0 text-amber-500" />
+                  <span>1st Half: 12 AM – 12 PM</span>
                 </div>
-
-                {/* Right side: duration + delete action */}
-                <div className="flex shrink-0 items-center gap-2 pl-1 sm:gap-3 sm:pl-2">
-                  <span className="font-mono text-xs font-bold whitespace-nowrap text-gray-900 sm:text-sm">
-                    {formatHoursMins(log.duration_seconds)}
-                  </span>
-                  <button
-                    onClick={() => {
-                      if (confirm(`Delete log "${log.title}"?`)) {
-                        deleteTimeLog(log.id);
-                      }
-                    }}
-                    className="shrink-0 cursor-pointer rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500 active:scale-95"
-                    title="Delete log"
-                  >
-                    <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  </button>
-                </div>
+                <span className="rounded-md bg-amber-100/70 px-2 py-0.5 text-xs font-bold text-amber-800">
+                  {amSlices.length} {amSlices.length === 1 ? "log" : "logs"}
+                </span>
               </div>
-            );
-          })}
-        </div>
+
+              {/* Hour markers */}
+              <div className="relative mb-1.5 h-3.5 text-[10px] font-bold text-gray-400 select-none">
+                <span className="absolute left-0">12 AM</span>
+                <span className="absolute left-1/4 -translate-x-1/2">3 AM</span>
+                <span className="absolute left-2/4 -translate-x-1/2">6 AM</span>
+                <span className="absolute left-3/4 -translate-x-1/2">9 AM</span>
+                <span className="absolute right-0">12 PM</span>
+              </div>
+
+              {/* Visual Track */}
+              <div className="relative h-7 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-inner">
+                {/* Hour grid lines (3 AM, 6 AM, 9 AM) */}
+                <div
+                  className="pointer-events-none absolute top-0 bottom-0 border-r border-dashed border-gray-200/80"
+                  style={{ left: "25%" }}
+                />
+                <div
+                  className="pointer-events-none absolute top-0 bottom-0 border-r border-dashed border-gray-200/80"
+                  style={{ left: "50%" }}
+                />
+                <div
+                  className="pointer-events-none absolute top-0 bottom-0 border-r border-dashed border-gray-200/80"
+                  style={{ left: "75%" }}
+                />
+
+                {/* 3. Tracked Slices */}
+                {amSlices.map((slice, idx) => (
+                  <div
+                    key={`${slice.logId}-am-${idx}`}
+                    className="group absolute top-0 bottom-0 z-10 transition-all hover:shadow-xs hover:brightness-10"
+                    style={{
+                      left: `${slice.leftPercent}%`,
+                      width: `${slice.widthPercent}%`,
+                      backgroundColor: slice.color,
+                    }}
+                    title={`${slice.title} - ${slice.categoryName} (${formatHoursMins(Math.round(slice.durationMins * 60))})`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Bar 2: PM Half (12:00 PM - 12:00 AM) */}
+            <div className="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-3 sm:p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-800">
+                  <Moon className="h-4 w-4 shrink-0 text-indigo-500" />
+                  <span>2nd Half: 12 PM – 12 AM</span>
+                </div>
+                <span className="rounded-md bg-indigo-100/70 px-2 py-0.5 text-xs font-bold text-indigo-800">
+                  {pmSlices.length} {pmSlices.length === 1 ? "log" : "logs"}
+                </span>
+              </div>
+
+              {/* Hour markers */}
+              <div className="relative mb-1.5 h-3.5 text-[10px] font-bold text-gray-400 select-none">
+                <span className="absolute left-0">12 PM</span>
+                <span className="absolute left-1/4 -translate-x-1/2">3 PM</span>
+                <span className="absolute left-2/4 -translate-x-1/2">6 PM</span>
+                <span className="absolute left-3/4 -translate-x-1/2">9 PM</span>
+                <span className="absolute right-0">12 AM</span>
+              </div>
+
+              {/* Visual Track */}
+              <div className="relative h-7 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-inner">
+                {/* Hour grid lines (3 PM, 6 PM, 9 PM) */}
+                <div
+                  className="pointer-events-none absolute top-0 bottom-0 border-r border-dashed border-gray-200/80"
+                  style={{ left: "25%" }}
+                />
+                <div
+                  className="pointer-events-none absolute top-0 bottom-0 border-r border-dashed border-gray-200/80"
+                  style={{ left: "50%" }}
+                />
+                <div
+                  className="pointer-events-none absolute top-0 bottom-0 border-r border-dashed border-gray-200/80"
+                  style={{ left: "75%" }}
+                />
+
+                {/* Tracked Slices */}
+                {pmSlices.map((slice, idx) => (
+                  <div
+                    key={`${slice.logId}-pm-${idx}`}
+                    className="group absolute top-0 bottom-0 z-10 transition-all hover:shadow-xs hover:brightness-10"
+                    style={{
+                      left: `${slice.leftPercent}%`,
+                      width: `${slice.widthPercent}%`,
+                      backgroundColor: slice.color,
+                    }}
+                    title={`${slice.title} - ${slice.categoryName} (${formatHoursMins(Math.round(slice.durationMins * 60))})`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Chronological Log History */}
+          {logs.length === 0 ? (
+            <div className="py-8 text-center text-xs font-medium text-gray-400">
+              {isToday
+                ? "No logs recorded today yet. When you save chunks or switch activities, they will appear here seamlessly."
+                : `No logs recorded for ${formattedDateHeader}.`}
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {sortedLogs.map((log) => {
+                const categoryName = log.categories?.name || "Others";
+                const categoryColor = log.categories?.color || "#64748B";
+
+                const startTimeStr = new Date(
+                  log.started_at
+                ).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+                const endTimeStr = new Date(log.ended_at).toLocaleTimeString(
+                  [],
+                  {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }
+                );
+
+                return (
+                  <div
+                    key={log.id}
+                    className="flex items-center justify-between gap-3 rounded-xl px-1.5 py-2.5 transition hover:bg-gray-50/80 sm:px-2 sm:py-3"
+                  >
+                    {/* Left side: indicator + title + details */}
+                    <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+                      {/* Category color bar / indicator */}
+                      <span
+                        className="h-8 w-1 shrink-0 rounded-full sm:h-9 sm:w-1.5"
+                        style={{
+                          backgroundColor: categoryColor,
+                        }}
+                      />
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                          <span className="truncate text-xs font-bold text-gray-900 sm:text-sm">
+                            {log.title}
+                          </span>
+                          <span
+                            className="shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white uppercase sm:px-2 sm:text-[10px]"
+                            style={{ backgroundColor: categoryColor }}
+                          >
+                            {categoryName}
+                          </span>
+                        </div>
+                        <p className="truncate text-[11px] font-medium text-gray-500 sm:text-xs">
+                          <span>
+                            {startTimeStr} - {endTimeStr}
+                          </span>
+                          {log.notes && <span> • {log.notes}</span>}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Right side: duration + delete action */}
+                    <div className="flex shrink-0 items-center gap-2 pl-1 sm:gap-3 sm:pl-2">
+                      <span className="font-mono text-xs font-bold whitespace-nowrap text-gray-900 sm:text-sm">
+                        {formatHoursMins(log.duration_seconds)}
+                      </span>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete log "${log.title}"?`)) {
+                            deleteTimeLog(log.id);
+                          }
+                        }}
+                        className="shrink-0 cursor-pointer rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500 active:scale-95"
+                        title="Delete log"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

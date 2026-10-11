@@ -16,19 +16,28 @@ const Home = () => {
   const { categories, isLoading: isCatLoading } = trackerHooks.useCategories();
   const { isLoading: isTimerLoading } = trackerHooks.useActiveTimer();
   const [todayStr, setTodayStr] = useState<string>(() => getLocalDateString());
+  const [selectedTimelineDate, setSelectedTimelineDate] = useState<string>(() =>
+    getLocalDateString()
+  );
 
   useEffect(() => {
     const interval = setInterval(() => {
       const current = getLocalDateString();
-      setTodayStr((prev) => (prev !== current ? current : prev));
+      setTodayStr((prev) => {
+        if (prev !== current) {
+          setSelectedTimelineDate((sel) => (sel === prev ? current : sel));
+          return current;
+        }
+        return prev;
+      });
     }, 15000);
     return () => clearInterval(interval);
   }, []);
 
   const { logs, isLoading: isSummaryLoading } =
-    trackerHooks.useDaySummary(todayStr);
+    trackerHooks.useDaySummary(selectedTimelineDate);
 
-  if (isCatLoading || isTimerLoading || isSummaryLoading) {
+  if (isCatLoading || isTimerLoading) {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center space-y-4">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
@@ -60,7 +69,13 @@ const Home = () => {
       <ContinuousTimerWidget categories={categories} />
 
       {/* 3. 24-Hour Timeline Bar & Chronological Logs */}
-      <DayTimeline24h logs={logs} />
+      <DayTimeline24h
+        logs={logs}
+        selectedDate={selectedTimelineDate}
+        onSelectDate={setSelectedTimelineDate}
+        todayStr={todayStr}
+        isLoading={isSummaryLoading}
+      />
     </div>
   );
 };
