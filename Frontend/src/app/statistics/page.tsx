@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import trackerHooks from "@/hooks/useTracker";
-import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Activity, PieChart } from "lucide-react";
 
 const getLocalDateString = (d: Date = new Date()) => {
   const year = d.getFullYear();
@@ -141,6 +141,7 @@ export const StatisticsPage = () => {
   };
 
   const isToday = selectedDate === todayStr;
+  const [viewTab, setViewTab] = useState<"all" | "activities" | "categories">("all");
 
   const formatHoursMins = (secs: number) => {
     if (secs === 0) return "0m";
@@ -152,7 +153,56 @@ export const StatisticsPage = () => {
   };
 
   const totalTrackedSeconds = summary?.totalTrackedSeconds ?? 0;
-  const categoryBreakdown = summary?.categoryBreakdown ?? [];
+  const categoryBreakdown = useMemo(
+    () => summary?.categoryBreakdown ?? [],
+    [summary?.categoryBreakdown]
+  );
+
+  // Aggregated activity-wise statistics across all categories
+  const allActivities = useMemo(() => {
+    if (!categoryBreakdown || categoryBreakdown.length === 0) return [];
+
+    const list: Array<{
+      id: string;
+      name: string;
+      color: string;
+      categoryName: string;
+      categoryColor: string;
+      durationSeconds: number;
+      formattedDuration: string;
+      dayPercentage: number;
+      logsCount: number;
+    }> = [];
+
+    let colorIdx = 0;
+    categoryBreakdown.forEach((cat) => {
+      (cat.activities || []).forEach((act) => {
+        const actColor =
+          act.color ||
+          ACTIVITY_PALETTE[colorIdx % ACTIVITY_PALETTE.length];
+        colorIdx++;
+
+        const dayPct =
+          totalTrackedSeconds > 0
+            ? Math.round((act.durationSeconds / totalTrackedSeconds) * 100)
+            : 0;
+
+        list.push({
+          id: `${cat.id}-${act.id}-${act.name}`,
+          name: act.name,
+          color: actColor,
+          categoryName: cat.name,
+          categoryColor: cat.color,
+          durationSeconds: act.durationSeconds,
+          formattedDuration: formatHoursMins(act.durationSeconds),
+          dayPercentage: dayPct,
+          logsCount: act.logsCount,
+        });
+      });
+    });
+
+    return list.sort((a, b) => b.durationSeconds - a.durationSeconds);
+  }, [categoryBreakdown, totalTrackedSeconds]);
 
   // Formatted date title
   const [yearNum, monthNum, dayNum] = selectedDate.split("-").map(Number);
@@ -250,58 +300,108 @@ export const StatisticsPage = () => {
           </div>
         </div>
 
-        {/* Overall Category Donut Chart */}
-        <div className="mt-4 border-t border-gray-100 pt-4">
-          {isLoading ? (
-            <div className="h-32 w-full animate-pulse rounded-2xl bg-gray-100" />
-          ) : totalTrackedSeconds > 0 ? (
-            <div className="flex flex-col items-center gap-6 py-2 sm:flex-row sm:items-center">
-              <DonutChart
-                slices={categoryBreakdown.map((cat) => ({
-                  id: cat.id,
-                  name: cat.name,
-                  color: cat.color,
-                  value: cat.durationSeconds,
-                  formattedValue: formatHoursMins(cat.durationSeconds),
-                  percentage: cat.percentage,
-                }))}
-                totalValue={totalTrackedSeconds}
-                centerTitle={formatHoursMins(totalTrackedSeconds)}
-                centerSubtitle="Total"
-                size={140}
-              />
-
-              {/* Legend pills beside the Donut Chart */}
-              <div className="flex flex-1 flex-wrap items-center gap-2">
-                {categoryBreakdown.map((cat) => (
-                  <div
-                    key={cat.id}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-800 transition hover:border-gray-300"
-                  >
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: cat.color }}
-                    />
-                    <span>{cat.name}</span>
-                    <span className="font-bold text-gray-500">
-                      {cat.percentage}%
-                    </span>
-                    <span className="text-[10px] text-gray-400">
-                      ({formatHoursMins(cat.durationSeconds)})
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="flex h-11 w-full items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 text-xs text-gray-400">
-              No activity recorded for {formattedDateTitle}
-            </div>
-          )}
+        {/* View Mode Toggle: All, Activity Wise, Category Wise */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-3">
+          <div className="flex items-center rounded-2xl border border-gray-200 bg-gray-50 p-1 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setViewTab("all")}
+              className={`cursor-pointer rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                viewTab === "all"
+                  ? "bg-white text-gray-900 shadow-xs"
+                  : "text-gray-500 hover:text-gray-800"
+              }`}
+            >
+              All Stats
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewTab("activities")}
+              className={`flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                viewTab === "activities"
+                  ? "bg-white text-purple-700 shadow-xs"
+                  : "text-gray-500 hover:text-gray-800"
+              }`}
+            >
+              <Activity className="h-3.5 w-3.5" />
+              <span>Activity Wise</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewTab("categories")}
+              className={`flex cursor-pointer items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                viewTab === "categories"
+                  ? "bg-white text-blue-700 shadow-xs"
+                  : "text-gray-500 hover:text-gray-800"
+              }`}
+            >
+              <PieChart className="h-3.5 w-3.5" />
+              <span>Category Wise</span>
+            </button>
+          </div>
+          <span className="text-[11px] font-medium text-gray-400">
+            {viewTab === "activities"
+              ? "Showing only activity-level metrics"
+              : viewTab === "categories"
+                ? "Showing only category-level metrics"
+                : "Showing complete overview"}
+          </span>
         </div>
+
+        {/* Overall Category Donut Chart (Shown in All or Category view) */}
+        {(viewTab === "all" || viewTab === "categories") && (
+          <div className="mt-4 border-t border-gray-100 pt-4">
+            {isLoading ? (
+              <div className="h-32 w-full animate-pulse rounded-2xl bg-gray-100" />
+            ) : totalTrackedSeconds > 0 ? (
+              <div className="flex flex-col items-center gap-6 py-2 sm:flex-row sm:items-center">
+                <DonutChart
+                  slices={categoryBreakdown.map((cat) => ({
+                    id: cat.id,
+                    name: cat.name,
+                    color: cat.color,
+                    value: cat.durationSeconds,
+                    formattedValue: formatHoursMins(cat.durationSeconds),
+                    percentage: cat.percentage,
+                  }))}
+                  totalValue={totalTrackedSeconds}
+                  centerTitle={formatHoursMins(totalTrackedSeconds)}
+                  centerSubtitle="Total"
+                  size={140}
+                />
+
+                {/* Legend pills beside the Donut Chart */}
+                <div className="flex flex-1 flex-wrap items-center gap-2">
+                  {categoryBreakdown.map((cat) => (
+                    <div
+                      key={cat.id}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-800 transition hover:border-gray-300"
+                    >
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: cat.color }}
+                      />
+                      <span>{cat.name}</span>
+                      <span className="font-bold text-gray-500">
+                        {cat.percentage}%
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        ({formatHoursMins(cat.durationSeconds)})
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex h-11 w-full items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 text-xs text-gray-400">
+                No activity recorded for {formattedDateTitle}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* 2. Loading / Error / Activity Donut Charts for Each Category */}
+      {/* 2. Loading / Error States */}
       {isLoading ? (
         <div className="flex min-h-[250px] flex-col items-center justify-center space-y-4 rounded-3xl border border-gray-200 bg-white p-12">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
@@ -314,139 +414,278 @@ export const StatisticsPage = () => {
           Failed to load statistics for this date. Please try again.
         </div>
       ) : totalTrackedSeconds === 0 ? null : (
-        <div className="space-y-4">
-          {categoryBreakdown.map((cat) => {
-            const activities = cat.activities || [];
-            const hasActivities = activities.length > 0;
-
-            return (
-              <div
-                key={cat.id}
-                className="rounded-3xl border border-gray-200 bg-white p-5 shadow-xs transition sm:p-6"
-              >
-                {/* Category Header */}
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-4">
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      className="h-3.5 w-3.5 rounded-full"
-                      style={{ backgroundColor: cat.color }}
-                    />
-                    <h2 className="text-base font-bold text-gray-900 sm:text-lg">
-                      {cat.name}
-                    </h2>
-                    <span
-                      className="rounded-full px-2.5 py-0.5 text-xs font-bold"
-                      style={{
-                        backgroundColor: `${cat.color}20`,
-                        color: cat.color,
-                      }}
-                    >
-                      {cat.percentage}% of day
-                    </span>
+        <>
+          {/* 3. Dedicated Activity-Wise Breakdown Card (Shown in All or Activity view) */}
+          {(viewTab === "all" || viewTab === "activities") && (
+            <div className="space-y-5 rounded-3xl border border-gray-200 bg-white p-5 shadow-xs transition sm:p-6">
+              {/* Header */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-purple-50 text-purple-700 shadow-2xs">
+                    <Activity className="h-4.5 w-4.5" />
                   </div>
-
-                  <div className="flex items-baseline gap-1.5 font-mono">
-                    <span className="text-lg font-black text-gray-900 sm:text-xl">
-                      {formatHoursMins(cat.durationSeconds)}
-                    </span>
-                    {cat.durationSeconds >= 60 && (
-                      <span className="text-xs font-medium text-gray-400">
-                        ({cat.hours}h)
-                      </span>
-                    )}
+                  <div>
+                    <h2 className="text-base font-bold text-gray-900 sm:text-lg">
+                      Activity-wise Breakdown
+                    </h2>
+                    <p className="text-xs font-medium text-gray-400">
+                      Ranked by time spent across all categories
+                    </p>
                   </div>
                 </div>
+                <span className="rounded-full bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700">
+                  {allActivities.length}{" "}
+                  {allActivities.length === 1 ? "activity" : "activities"}
+                </span>
+              </div>
 
-                {/* Activity Donut Chart & Legend */}
-                <div className="pt-4">
-                  {hasActivities ? (
-                    <div className="flex flex-col items-center gap-6 py-2 sm:flex-row sm:items-center">
-                      <DonutChart
-                        slices={activities.map((act, idx) => {
-                          const actColor =
-                            act.color ||
-                            (activities.length === 1
-                              ? cat.color
-                              : ACTIVITY_PALETTE[
-                                  idx % ACTIVITY_PALETTE.length
-                                ]);
-                          const actCategoryPercent =
-                            cat.durationSeconds > 0
-                              ? Math.round(
-                                  (act.durationSeconds / cat.durationSeconds) *
-                                    100
-                                )
-                              : 0;
-                          return {
-                            id: act.id,
-                            name: act.name,
-                            color: actColor,
-                            value: act.durationSeconds,
-                            formattedValue: formatHoursMins(
-                              act.durationSeconds
-                            ),
-                            percentage: actCategoryPercent,
-                          };
-                        })}
-                        totalValue={cat.durationSeconds}
-                        centerTitle={formatHoursMins(cat.durationSeconds)}
-                        centerSubtitle={cat.name}
-                        size={130}
-                      />
+              {/* Activity Donut Chart & Legend */}
+              {allActivities.length > 0 ? (
+                <div className="flex flex-col items-center gap-6 py-2 sm:flex-row sm:items-center">
+                  <DonutChart
+                    slices={allActivities.map((act) => ({
+                      id: act.id,
+                      name: act.name,
+                      color: act.color,
+                      value: act.durationSeconds,
+                      formattedValue: act.formattedDuration,
+                      percentage: act.dayPercentage,
+                    }))}
+                    totalValue={totalTrackedSeconds}
+                    centerTitle={formatHoursMins(totalTrackedSeconds)}
+                    centerSubtitle="Activities"
+                    size={140}
+                  />
 
-                      {/* Activity Legend Pills beside Donut */}
-                      <div className="flex flex-1 flex-wrap items-center gap-2">
-                        {activities.map((act, idx) => {
-                          const actColor =
-                            act.color ||
-                            (activities.length === 1
-                              ? cat.color
-                              : ACTIVITY_PALETTE[
-                                  idx % ACTIVITY_PALETTE.length
-                                ]);
-                          const actCategoryPercent =
-                            cat.durationSeconds > 0
-                              ? Math.round(
-                                  (act.durationSeconds /
-                                    cat.durationSeconds) *
-                                    100
-                                )
-                              : 0;
+                  {/* Activity Legend Pills */}
+                  <div className="flex flex-1 flex-wrap items-center gap-2">
+                    {allActivities.map((act) => (
+                      <div
+                        key={act.id}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-800 transition hover:border-gray-300"
+                      >
+                        <span
+                          className="h-2.5 w-2.5 shrink-0 rounded-full"
+                          style={{ backgroundColor: act.color }}
+                        />
+                        <span className="truncate max-w-[130px]">{act.name}</span>
+                        <span className="font-bold text-gray-500">
+                          {act.dayPercentage}%
+                        </span>
+                        <span className="text-[10px] text-gray-400">
+                          ({act.formattedDuration})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex h-11 w-full items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 text-xs text-gray-400">
+                  No activities logged for {formattedDateTitle}
+                </div>
+              )}
 
-                          return (
-                            <div
-                              key={act.id}
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-800 transition hover:border-gray-300"
-                            >
-                              <span
-                                className="h-2.5 w-2.5 rounded-full"
-                                style={{ backgroundColor: actColor }}
-                              />
-                              <span>{act.name}</span>
-                              <span className="font-bold text-gray-500">
-                                {actCategoryPercent}%
+              {/* Ranked Detailed Activities List */}
+              {allActivities.length > 0 && (
+                <div className="space-y-2.5 border-t border-gray-100 pt-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                    Ranked Activities ({allActivities.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {allActivities.map((act, idx) => (
+                      <div
+                        key={act.id}
+                        className="flex items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-gray-50/70 p-3 transition hover:bg-gray-100/70 sm:p-3.5"
+                      >
+                        {/* Rank badge + Name + Category + Progress Bar */}
+                        <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white font-mono text-[11px] font-bold text-gray-600 shadow-2xs">
+                            #{idx + 1}
+                          </span>
+                          <div className="min-w-0 flex-1 space-y-1.5">
+                            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                              <span className="truncate text-xs font-bold text-gray-900 sm:text-sm">
+                                {act.name}
                               </span>
-                              <span className="text-[10px] text-gray-400">
-                                ({formatHoursMins(act.durationSeconds)})
+                              <span
+                                className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                                style={{
+                                  backgroundColor: `${act.categoryColor}15`,
+                                  color: act.categoryColor,
+                                }}
+                              >
+                                {act.categoryName}
                               </span>
                             </div>
-                          );
-                        })}
+                            {/* Horizontal Progress bar */}
+                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200/80">
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${Math.min(100, Math.max(act.dayPercentage, 1))}%`,
+                                  backgroundColor: act.color,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Duration + Percentage + Logs count */}
+                        <div className="shrink-0 text-right">
+                          <div className="font-mono text-xs font-black text-gray-900 sm:text-sm">
+                            {act.formattedDuration}
+                          </div>
+                          <div className="text-[10px] font-semibold text-gray-400">
+                            {act.dayPercentage}% • {act.logsCount}{" "}
+                            {act.logsCount === 1 ? "log" : "logs"}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 4. Category Detail Cards (Shown in All or Category view) */}
+          {(viewTab === "all" || viewTab === "categories") && (
+            <div className="space-y-4">
+              {categoryBreakdown.map((cat) => {
+                const activities = cat.activities || [];
+                const hasActivities = activities.length > 0;
+
+                return (
+                  <div
+                    key={cat.id}
+                    className="rounded-3xl border border-gray-200 bg-white p-5 shadow-xs transition sm:p-6"
+                  >
+                    {/* Category Header */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-4">
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className="h-3.5 w-3.5 rounded-full"
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        <h2 className="text-base font-bold text-gray-900 sm:text-lg">
+                          {cat.name}
+                        </h2>
+                        <span
+                          className="rounded-full px-2.5 py-0.5 text-xs font-bold"
+                          style={{
+                            backgroundColor: `${cat.color}20`,
+                            color: cat.color,
+                          }}
+                        >
+                          {cat.percentage}% of day
+                        </span>
+                      </div>
+
+                      <div className="flex items-baseline gap-1.5 font-mono">
+                        <span className="text-lg font-black text-gray-900 sm:text-xl">
+                          {formatHoursMins(cat.durationSeconds)}
+                        </span>
+                        {cat.durationSeconds >= 60 && (
+                          <span className="text-xs font-medium text-gray-400">
+                            ({cat.hours}h)
+                          </span>
+                        )}
                       </div>
                     </div>
-                  ) : (
-                    <div className="flex h-10 w-full items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 text-xs text-gray-400">
-                      No activities logged under this category.
+
+                    {/* Activity Donut Chart & Legend */}
+                    <div className="pt-4">
+                      {hasActivities ? (
+                        <div className="flex flex-col items-center gap-6 py-2 sm:flex-row sm:items-center">
+                          <DonutChart
+                            slices={activities.map((act, idx) => {
+                              const actColor =
+                                act.color ||
+                                (activities.length === 1
+                                  ? cat.color
+                                  : ACTIVITY_PALETTE[
+                                      idx % ACTIVITY_PALETTE.length
+                                    ]);
+                              const actCategoryPercent =
+                                cat.durationSeconds > 0
+                                  ? Math.round(
+                                      (act.durationSeconds / cat.durationSeconds) *
+                                        100
+                                    )
+                                  : 0;
+                              return {
+                                id: act.id,
+                                name: act.name,
+                                color: actColor,
+                                value: act.durationSeconds,
+                                formattedValue: formatHoursMins(
+                                  act.durationSeconds
+                                ),
+                                percentage: actCategoryPercent,
+                              };
+                            })}
+                            totalValue={cat.durationSeconds}
+                            centerTitle={formatHoursMins(cat.durationSeconds)}
+                            centerSubtitle={cat.name}
+                            size={130}
+                          />
+
+                          {/* Activity Legend Pills beside Donut */}
+                          <div className="flex flex-1 flex-wrap items-center gap-2">
+                            {activities.map((act, idx) => {
+                              const actColor =
+                                act.color ||
+                                (activities.length === 1
+                                  ? cat.color
+                                  : ACTIVITY_PALETTE[
+                                      idx % ACTIVITY_PALETTE.length
+                                    ]);
+                              const actCategoryPercent =
+                                cat.durationSeconds > 0
+                                  ? Math.round(
+                                      (act.durationSeconds /
+                                        cat.durationSeconds) *
+                                        100
+                                    )
+                                  : 0;
+
+                              return (
+                                <div
+                                  key={act.id}
+                                  className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-800 transition hover:border-gray-300"
+                                >
+                                  <span
+                                    className="h-2.5 w-2.5 rounded-full"
+                                    style={{ backgroundColor: actColor }}
+                                  />
+                                  <span>{act.name}</span>
+                                  <span className="font-bold text-gray-500">
+                                    {actCategoryPercent}%
+                                  </span>
+                                  <span className="text-[10px] text-gray-400">
+                                    ({formatHoursMins(act.durationSeconds)})
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex h-10 w-full items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 text-xs text-gray-400">
+                          No activities logged under this category.
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 };
 
 export default StatisticsPage;
+
