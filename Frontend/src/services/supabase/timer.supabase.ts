@@ -1,4 +1,5 @@
 import { supabase, getActiveUserId } from "@/config/supabase";
+import { splitIntervalByMidnight } from "@/utils/dateUtils";
 import type { ApiResponse, ActiveTimer, TimeLog } from "@/types";
 
 export const TIMER_SELECT =
@@ -45,7 +46,9 @@ export const supabaseGetActiveTimer = async (): Promise<
       .single();
 
     if (createError) {
-      throw new Error(createError.message || "Failed to initialize active timer");
+      throw new Error(
+        createError.message || "Failed to initialize active timer"
+      );
     }
 
     return {
@@ -139,29 +142,28 @@ export const supabaseStopTimer = async (
     currentTimer.started_at &&
     currentTimer.category_id
   ) {
-    const startMs = new Date(currentTimer.started_at).getTime();
-    const endMs = new Date(now).getTime();
-    const durationSeconds = Math.max(1, Math.round((endMs - startMs) / 1000));
     const logTitle = payload?.title?.trim() || currentTimer.title || "Task";
+    const chunks = splitIntervalByMidnight(currentTimer.started_at, now);
+
+    const logRows = chunks.map((chunk) => ({
+      user_id: userId,
+      category_id: currentTimer.category_id,
+      activity_id: currentTimer.activity_id || null,
+      title: logTitle,
+      started_at: chunk.started_at,
+      ended_at: chunk.ended_at,
+      duration_seconds: chunk.duration_seconds,
+      is_wasted: false,
+      notes: payload?.notes || null,
+    }));
 
     const { data: inserted, error: insertError } = await supabase
       .from("time_logs")
-      .insert({
-        user_id: userId,
-        category_id: currentTimer.category_id,
-        activity_id: currentTimer.activity_id || null,
-        title: logTitle,
-        started_at: currentTimer.started_at,
-        ended_at: now,
-        duration_seconds: durationSeconds,
-        is_wasted: false,
-        notes: payload?.notes || null,
-      })
-      .select(LOG_SELECT)
-      .single();
+      .insert(logRows)
+      .select(LOG_SELECT);
 
-    if (!insertError && inserted) {
-      savedLog = inserted as unknown as TimeLog;
+    if (!insertError && inserted && inserted.length > 0) {
+      savedLog = inserted[inserted.length - 1] as unknown as TimeLog;
     }
   }
 
@@ -213,28 +215,28 @@ export const supabaseSaveChunk = async (
   let savedLog: TimeLog | null = null;
 
   if (currentTimer?.started_at && currentTimer.category_id) {
-    const startMs = new Date(currentTimer.started_at).getTime();
-    const endMs = new Date(now).getTime();
-    const durationSeconds = Math.max(1, Math.round((endMs - startMs) / 1000));
+    const logTitle = payload.title?.trim() || currentTimer.title || "Task";
+    const chunks = splitIntervalByMidnight(currentTimer.started_at, now);
+
+    const logRows = chunks.map((chunk) => ({
+      user_id: userId,
+      category_id: payload.category_id || currentTimer.category_id,
+      activity_id: payload.activity_id ?? currentTimer.activity_id,
+      title: logTitle,
+      started_at: chunk.started_at,
+      ended_at: chunk.ended_at,
+      duration_seconds: chunk.duration_seconds,
+      is_wasted: false,
+      notes: payload.notes || null,
+    }));
 
     const { data: inserted } = await supabase
       .from("time_logs")
-      .insert({
-        user_id: userId,
-        category_id: payload.category_id || currentTimer.category_id,
-        activity_id: payload.activity_id ?? currentTimer.activity_id,
-        title: payload.title?.trim() || currentTimer.title || "Task",
-        started_at: currentTimer.started_at,
-        ended_at: now,
-        duration_seconds: durationSeconds,
-        is_wasted: false,
-        notes: payload.notes || null,
-      })
-      .select(LOG_SELECT)
-      .single();
+      .insert(logRows)
+      .select(LOG_SELECT);
 
-    if (inserted) {
-      savedLog = inserted as unknown as TimeLog;
+    if (inserted && inserted.length > 0) {
+      savedLog = inserted[inserted.length - 1] as unknown as TimeLog;
     }
   }
 
@@ -294,28 +296,29 @@ export const supabaseSwitchTimer = async (
     currentTimer.started_at &&
     currentTimer.category_id
   ) {
-    const startMs = new Date(currentTimer.started_at).getTime();
-    const endMs = new Date(now).getTime();
-    const durationSeconds = Math.max(1, Math.round((endMs - startMs) / 1000));
+    const logTitle =
+      payload.previous_title?.trim() || currentTimer.title || "Task";
+    const chunks = splitIntervalByMidnight(currentTimer.started_at, now);
+
+    const logRows = chunks.map((chunk) => ({
+      user_id: userId,
+      category_id: currentTimer.category_id,
+      activity_id: currentTimer.activity_id || null,
+      title: logTitle,
+      started_at: chunk.started_at,
+      ended_at: chunk.ended_at,
+      duration_seconds: chunk.duration_seconds,
+      is_wasted: false,
+      notes: payload.previous_notes || null,
+    }));
 
     const { data: inserted } = await supabase
       .from("time_logs")
-      .insert({
-        user_id: userId,
-        category_id: currentTimer.category_id,
-        activity_id: currentTimer.activity_id || null,
-        title: payload.previous_title?.trim() || currentTimer.title || "Task",
-        started_at: currentTimer.started_at,
-        ended_at: now,
-        duration_seconds: durationSeconds,
-        is_wasted: false,
-        notes: payload.previous_notes || null,
-      })
-      .select(LOG_SELECT)
-      .single();
+      .insert(logRows)
+      .select(LOG_SELECT);
 
-    if (inserted) {
-      savedLog = inserted as unknown as TimeLog;
+    if (inserted && inserted.length > 0) {
+      savedLog = inserted[inserted.length - 1] as unknown as TimeLog;
     }
   }
 

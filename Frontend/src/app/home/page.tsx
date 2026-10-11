@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { ContinuousTimerWidget } from "./components/ContinuousTimerWidget";
 import { DayTimeline24h } from "./components/DayTimeline24h";
 import trackerHooks from "@/hooks/useTracker";
@@ -14,8 +15,18 @@ const Home = () => {
   const { user } = authHooks.useUser();
   const { categories, isLoading: isCatLoading } = trackerHooks.useCategories();
   const { isLoading: isTimerLoading } = trackerHooks.useActiveTimer();
-  const todayStr = getLocalDateString();
-  const { logs, isLoading: isSummaryLoading } = trackerHooks.useDaySummary(todayStr);
+  const [todayStr, setTodayStr] = useState<string>(() => getLocalDateString());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const current = getLocalDateString();
+      setTodayStr((prev) => (prev !== current ? current : prev));
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const { logs, isLoading: isSummaryLoading } =
+    trackerHooks.useDaySummary(todayStr);
 
   if (isCatLoading || isTimerLoading || isSummaryLoading) {
     return (
