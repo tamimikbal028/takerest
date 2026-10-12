@@ -202,16 +202,6 @@ export const ContinuousTimerWidget = ({
           <div className="flex items-center gap-2">
             {isRunning ? (
               <>
-                <span className="relative flex h-2.5 w-2.5">
-                  <span
-                    className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"
-                    style={{ backgroundColor: activeColor }}
-                  />
-                  <span
-                    className="relative inline-flex h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: activeColor }}
-                  />
-                </span>
                 <span
                   className="rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wider text-white uppercase shadow-2xs"
                   style={{ backgroundColor: activeColor }}
