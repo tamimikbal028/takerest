@@ -6,6 +6,7 @@ import {
   Moon,
   ChevronLeft,
   ChevronRight,
+  Clock,
 } from "lucide-react";
 import trackerHooks from "@/hooks/useTracker";
 import type { TimeLog } from "@/types";
@@ -347,7 +348,7 @@ export const DayTimeline24h = ({
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {sortedLogs.map((log) => {
+              {sortedLogs.map((log, index) => {
                 const categoryName = log.categories?.name || "Others";
                 const categoryColor = log.categories?.color || "#64748B";
 
@@ -365,59 +366,109 @@ export const DayTimeline24h = ({
                   }
                 );
 
-                return (
-                  <div
-                    key={log.id}
-                    className="flex items-center justify-between gap-3 rounded-xl px-1.5 py-2.5 transition hover:bg-gray-50/80 sm:px-2 sm:py-3"
-                  >
-                    {/* Left side: indicator + title + details */}
-                    <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
-                      {/* Category color bar / indicator */}
-                      <span
-                        className="h-8 w-1 shrink-0 rounded-full sm:h-9 sm:w-1.5"
-                        style={{
-                          backgroundColor: categoryColor,
-                        }}
-                      />
+                // Compute gap between this log and the preceding chronological log (index + 1)
+                const nextLog = sortedLogs[index + 1];
+                let gapElement = null;
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                          <span className="truncate text-xs font-bold text-gray-900 sm:text-sm">
-                            {log.title}
-                          </span>
-                          <span
-                            className="shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white uppercase sm:px-2 sm:text-[10px]"
-                            style={{ backgroundColor: categoryColor }}
-                          >
-                            {categoryName}
-                          </span>
+                if (nextLog) {
+                  const currentStart = new Date(log.started_at).getTime();
+                  const previousEnd = new Date(nextLog.ended_at).getTime();
+                  const gapSeconds = Math.floor(
+                    (currentStart - previousEnd) / 1000
+                  );
+
+                  // Only show gap if >= 60 seconds (1 minute)
+                  if (gapSeconds >= 60) {
+                    const gapStartStr = new Date(
+                      nextLog.ended_at
+                    ).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    });
+                    const gapEndStr = new Date(
+                      log.started_at
+                    ).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    });
+
+                    gapElement = (
+                      <div className="my-1.5 flex items-center justify-between gap-2.5 rounded-xl border border-dashed border-gray-200/90 bg-gray-50/60 px-2.5 py-1.5 transition hover:border-gray-300 hover:bg-gray-100/60 sm:my-2 sm:px-3 sm:py-2">
+                        <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+                          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-gray-200/70 text-gray-500 sm:h-5.5 sm:w-5.5">
+                            <Clock className="h-3 w-3 text-gray-400 sm:h-3.5 sm:w-3.5" />
+                          </div>
+                          <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2">
+                            <span className="text-[11px] font-semibold text-gray-600 sm:text-xs">
+                              Untracked Time
+                            </span>
+                            <span className="text-[10px] font-medium text-gray-400 sm:text-[11px]">
+                              ({gapStartStr} – {gapEndStr})
+                            </span>
+                          </div>
                         </div>
-                        <p className="truncate text-[11px] font-medium text-gray-500 sm:text-xs">
-                          <span>
-                            {startTimeStr} - {endTimeStr}
-                          </span>
-                          {log.notes && <span> • {log.notes}</span>}
-                        </p>
+                        <span className="shrink-0 font-mono text-[11px] font-bold text-gray-500 sm:text-xs">
+                          {formatHoursMins(gapSeconds)}
+                        </span>
+                      </div>
+                    );
+                  }
+                }
+
+                return (
+                  <div key={log.id} className="py-0.5">
+                    <div className="flex items-center justify-between gap-3 rounded-xl px-1.5 py-2.5 transition hover:bg-gray-50/80 sm:px-2 sm:py-3">
+                      {/* Left side: indicator + title + details */}
+                      <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+                        {/* Category color bar / indicator */}
+                        <span
+                          className="h-8 w-1 shrink-0 rounded-full sm:h-9 sm:w-1.5"
+                          style={{
+                            backgroundColor: categoryColor,
+                          }}
+                        />
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                            <span className="truncate text-xs font-bold text-gray-900 sm:text-sm">
+                              {log.title}
+                            </span>
+                            <span
+                              className="shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white uppercase sm:px-2 sm:text-[10px]"
+                              style={{ backgroundColor: categoryColor }}
+                            >
+                              {categoryName}
+                            </span>
+                          </div>
+                          <p className="truncate text-[11px] font-medium text-gray-500 sm:text-xs">
+                            <span>
+                              {startTimeStr} - {endTimeStr}
+                            </span>
+                            {log.notes && <span> • {log.notes}</span>}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Right side: duration + delete action */}
+                      <div className="flex shrink-0 items-center gap-2 pl-1 sm:gap-3 sm:pl-2">
+                        <span className="font-mono text-xs font-bold whitespace-nowrap text-gray-900 sm:text-sm">
+                          {formatHoursMins(log.duration_seconds)}
+                        </span>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete log "${log.title}"?`)) {
+                              deleteTimeLog(log.id);
+                            }
+                          }}
+                          className="shrink-0 cursor-pointer rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500 active:scale-95"
+                          title="Delete log"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        </button>
                       </div>
                     </div>
 
-                    {/* Right side: duration + delete action */}
-                    <div className="flex shrink-0 items-center gap-2 pl-1 sm:gap-3 sm:pl-2">
-                      <span className="font-mono text-xs font-bold whitespace-nowrap text-gray-900 sm:text-sm">
-                        {formatHoursMins(log.duration_seconds)}
-                      </span>
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete log "${log.title}"?`)) {
-                            deleteTimeLog(log.id);
-                          }
-                        }}
-                        className="shrink-0 cursor-pointer rounded-lg p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500 active:scale-95"
-                        title="Delete log"
-                      >
-                        <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                      </button>
-                    </div>
+                    {gapElement}
                   </div>
                 );
               })}
