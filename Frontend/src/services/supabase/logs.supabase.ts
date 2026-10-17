@@ -1,5 +1,6 @@
 import { supabase, getActiveUserId } from "@/config/supabase";
 import { LOG_SELECT } from "./timer.supabase";
+import { splitIntervalByMidnight } from "@/utils/dateUtils";
 import type {
   ApiResponse,
   TimeLog,
@@ -189,6 +190,53 @@ export const supabaseDeleteTimeLog = async (
     success: true,
     message: "Time log deleted successfully",
     data: { deletedId: id },
+  };
+};
+
+export interface CreateTimeLogPayload {
+  category_id: string;
+  activity_id?: string | null;
+  title: string;
+  started_at: string;
+  ended_at: string;
+  notes?: string | null;
+  is_wasted?: boolean;
+}
+
+export const supabaseCreateTimeLog = async (
+  payload: CreateTimeLogPayload
+): Promise<ApiResponse<{ log: TimeLog }>> => {
+  const userId = await getActiveUserId();
+  const chunks = splitIntervalByMidnight(payload.started_at, payload.ended_at);
+
+  const logRows = chunks.map((chunk) => ({
+    user_id: userId,
+    category_id: payload.category_id,
+    activity_id: payload.activity_id || null,
+    title: payload.title.trim() || "Manual Log",
+    started_at: chunk.started_at,
+    ended_at: chunk.ended_at,
+    duration_seconds: chunk.duration_seconds,
+    is_wasted: payload.is_wasted ?? false,
+    notes: payload.notes?.trim() || null,
+  }));
+
+  const { data: inserted, error } = await supabase
+    .from("time_logs")
+    .insert(logRows)
+    .select(LOG_SELECT);
+
+  if (error) {
+    throw new Error(error.message || "Failed to create time log");
+  }
+
+  const savedLog = (inserted?.[0] || null) as unknown as TimeLog;
+
+  return {
+    statusCode: 201,
+    success: true,
+    message: "Time log created successfully",
+    data: { log: savedLog },
   };
 };
 

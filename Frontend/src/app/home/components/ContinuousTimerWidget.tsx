@@ -86,7 +86,7 @@ export const ContinuousTimerWidget = ({
       const cat = categories.find((c) => c.id === catId);
       if (cat) {
         return {
-          title: `${cat.name} (General)`,
+          title: cat.name,
           categoryName: cat.name,
           color: cat.color || "#3B82F6",
         };
@@ -288,11 +288,12 @@ export const ContinuousTimerWidget = ({
                     <span className="truncate text-xs font-bold text-gray-800 sm:text-sm">
                       {selectedInfo?.title || "Choose activity"}
                     </span>
-                    {selectedInfo?.categoryName && (
-                      <span className="ml-auto shrink-0 rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500">
-                        {selectedInfo.categoryName}
-                      </span>
-                    )}
+                    {selectedInfo?.categoryName &&
+                      selectedInfo.title !== selectedInfo.categoryName && (
+                        <span className="ml-auto shrink-0 rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500">
+                          {selectedInfo.categoryName}
+                        </span>
+                      )}
                   </div>
 
                   <ChevronDown
@@ -315,12 +316,32 @@ export const ContinuousTimerWidget = ({
                         return (
                           <div key={c.id} className="py-1 first:pt-0 last:pb-0">
                             {/* Category Group Header */}
-                            <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-black tracking-wider text-gray-400 uppercase">
-                              <span
-                                className="h-1.5 w-1.5 shrink-0 rounded-full"
-                                style={{ backgroundColor: c.color }}
-                              />
-                              <span className="truncate">{c.name}</span>
+                            <div className="flex items-center justify-between px-2 py-1 text-[10px] font-black tracking-wider text-gray-400 uppercase">
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className="h-1.5 w-1.5 shrink-0 rounded-full"
+                                  style={{ backgroundColor: c.color }}
+                                />
+                                <span className="truncate">{c.name}</span>
+                              </div>
+
+                              {/* Allow picking category directly */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedKey(`cat_${c.id}`);
+                                  setIsDropdownOpen(false);
+                                }}
+                                className={`cursor-pointer text-[10px] font-semibold transition hover:underline ${
+                                  selectedKey === `cat_${c.id}`
+                                    ? "font-bold text-blue-700"
+                                    : "text-blue-600"
+                                }`}
+                              >
+                                {selectedKey === `cat_${c.id}`
+                                  ? "✓ Selected"
+                                  : "Select General"}
+                              </button>
                             </div>
 
                             {/* Activities */}
@@ -364,7 +385,7 @@ export const ContinuousTimerWidget = ({
                                   }`}
                                 >
                                   <span className="truncate">
-                                    {c.name} (General)
+                                    {c.name}
                                   </span>
                                   {selectedKey === `cat_${c.id}` && (
                                     <Check className="h-3.5 w-3.5 shrink-0 text-blue-600" />

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   Trash2,
   Calendar,
@@ -7,9 +7,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Plus,
 } from "lucide-react";
 import trackerHooks from "@/hooks/useTracker";
-import type { TimeLog } from "@/types";
+import type { TimeLog, Category } from "@/types";
+import { AddUntrackedLogModal } from "./AddUntrackedLogModal";
 
 interface DayTimeline24hProps {
   logs: TimeLog[];
@@ -17,6 +19,7 @@ interface DayTimeline24hProps {
   onSelectDate?: (date: string) => void;
   todayStr?: string;
   isLoading?: boolean;
+  categories?: Category[];
 }
 
 interface BarSlice {
@@ -42,8 +45,17 @@ export const DayTimeline24h = ({
   onSelectDate,
   todayStr,
   isLoading,
+  categories,
 }: DayTimeline24hProps) => {
   const { mutate: deleteTimeLog } = trackerHooks.useDeleteTimeLog();
+  const { categories: fetchedCategories } = trackerHooks.useCategories();
+  const { activeTimer } = trackerHooks.useActiveTimer();
+  const allCategories = categories || fetchedCategories || [];
+
+  const [modalSlot, setModalSlot] = useState<{ start: Date; end: Date } | null>(
+    null
+  );
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   const today = todayStr || getLocalDateString();
   const activeDate = selectedDate || today;
@@ -51,6 +63,27 @@ export const DayTimeline24h = ({
 
   const [yearNum, monthNum, dayNum] = activeDate.split("-").map(Number);
   const dateObj = new Date(yearNum, monthNum - 1, dayNum);
+
+  const dayStart = useMemo(
+    () => new Date(yearNum, monthNum - 1, dayNum, 0, 0, 0, 0),
+    [yearNum, monthNum, dayNum]
+  );
+  const dayEnd = useMemo(
+    () => new Date(yearNum, monthNum - 1, dayNum + 1, 0, 0, 0, 0),
+    [yearNum, monthNum, dayNum]
+  );
+
+  const upperBound = useMemo(() => {
+    const now = new Date();
+    if (isToday) {
+      if (activeTimer?.is_running && activeTimer.started_at) {
+        const timerStart = new Date(activeTimer.started_at).getTime();
+        return new Date(Math.min(now.getTime(), timerStart));
+      }
+      return now;
+    }
+    return dayEnd;
+  }, [isToday, activeTimer, dayEnd]);
 
   const formattedDateHeader = dateObj.toLocaleDateString(undefined, {
     weekday: "short",
@@ -85,6 +118,75 @@ export const DayTimeline24h = ({
     const mins = Math.floor((secs % 3600) / 60);
     if (hrs === 0) return `${mins}m`;
     return `${hrs}h ${mins}m`;
+  };
+
+  const renderUntrackedGap = (
+    gapStart: Date,
+    gapEnd: Date,
+    key: string
+  ) => {
+    const gapSeconds = Math.floor(
+      (gapEnd.getTime() - gapStart.getTime()) / 1000
+    );
+
+    // Only show gap if >= 60 seconds (1 minute)
+    if (gapSeconds < 60) return null;
+
+    const gapStartStr = gapStart.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const gapEndStr = gapEnd.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const handleOpenModal = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setModalSlot({
+        start: gapStart,
+        end: gapEnd,
+      });
+      setIsModalOpen(true);
+    };
+
+    return (
+      <div
+        key={key}
+        onClick={handleOpenModal}
+        className="group my-1.5 flex cursor-pointer items-center justify-between gap-2.5 rounded-xl border border-dashed border-gray-200/90 bg-gray-50/60 px-2.5 py-1.5 transition hover:border-blue-300 hover:bg-blue-50/30 sm:my-2 sm:px-3 sm:py-2"
+        title="Click to add a log for this untracked slot"
+      >
+        <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-gray-200/70 text-gray-500 transition-colors group-hover:bg-blue-100 group-hover:text-blue-600 sm:h-5.5 sm:w-5.5">
+            <Clock className="h-3 w-3 text-gray-400 transition-colors group-hover:text-blue-600 sm:h-3.5 sm:w-3.5" />
+          </div>
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2">
+            <span className="text-[11px] font-semibold text-gray-600 transition-colors group-hover:text-gray-900 sm:text-xs">
+              Untracked Time
+            </span>
+            <span className="text-[10px] font-medium text-gray-400 sm:text-[11px]">
+              ({gapStartStr} – {gapEndStr})
+            </span>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="shrink-0 font-mono text-[11px] font-bold text-gray-500 sm:text-xs">
+            {formatHoursMins(gapSeconds)}
+          </span>
+          <button
+            type="button"
+            onClick={handleOpenModal}
+            className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-blue-200 bg-white px-2 py-1 text-[11px] font-bold text-blue-700 shadow-2xs transition hover:border-blue-300 hover:bg-blue-600 hover:text-white active:scale-95"
+            title="Log time in this slot"
+          >
+            <Plus className="h-3 w-3" />
+            <span>Add Log</span>
+          </button>
+        </div>
+      </div>
+    );
   };
 
   // Helper to slice logs into a 12-hour half (AM: 0-720 mins, PM: 720-1440 mins)
@@ -341,13 +443,23 @@ export const DayTimeline24h = ({
 
           {/* Chronological Log History */}
           {logs.length === 0 ? (
-            <div className="py-8 text-center text-xs font-medium text-gray-400">
-              {isToday
-                ? "No logs recorded today yet. When you save chunks or switch activities, they will appear here seamlessly."
-                : `No logs recorded for ${formattedDateHeader}.`}
+            <div className="py-6 space-y-3">
+              <div className="text-center text-xs font-medium text-gray-400">
+                {isToday
+                  ? "No logs recorded today yet. When you track time or add a manual log, it will appear here."
+                  : `No logs recorded for ${formattedDateHeader}.`}
+              </div>
+              {renderUntrackedGap(dayStart, upperBound, "empty-day-gap")}
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
+              {/* Gap after latest log (top of timeline) */}
+              {renderUntrackedGap(
+                new Date(sortedLogs[0].ended_at),
+                upperBound,
+                "latest-untracked-gap"
+              )}
+
               {sortedLogs.map((log, index) => {
                 const categoryName = log.categories?.name || "Others";
                 const categoryColor = log.categories?.color || "#64748B";
@@ -368,52 +480,13 @@ export const DayTimeline24h = ({
 
                 // Compute gap between this log and the preceding chronological log (index + 1)
                 const nextLog = sortedLogs[index + 1];
-                let gapElement = null;
-
-                if (nextLog) {
-                  const currentStart = new Date(log.started_at).getTime();
-                  const previousEnd = new Date(nextLog.ended_at).getTime();
-                  const gapSeconds = Math.floor(
-                    (currentStart - previousEnd) / 1000
-                  );
-
-                  // Only show gap if >= 60 seconds (1 minute)
-                  if (gapSeconds >= 60) {
-                    const gapStartStr = new Date(
-                      nextLog.ended_at
-                    ).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    });
-                    const gapEndStr = new Date(
-                      log.started_at
-                    ).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    });
-
-                    gapElement = (
-                      <div className="my-1.5 flex items-center justify-between gap-2.5 rounded-xl border border-dashed border-gray-200/90 bg-gray-50/60 px-2.5 py-1.5 transition hover:border-gray-300 hover:bg-gray-100/60 sm:my-2 sm:px-3 sm:py-2">
-                        <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
-                          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-gray-200/70 text-gray-500 sm:h-5.5 sm:w-5.5">
-                            <Clock className="h-3 w-3 text-gray-400 sm:h-3.5 sm:w-3.5" />
-                          </div>
-                          <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2">
-                            <span className="text-[11px] font-semibold text-gray-600 sm:text-xs">
-                              Untracked Time
-                            </span>
-                            <span className="text-[10px] font-medium text-gray-400 sm:text-[11px]">
-                              ({gapStartStr} – {gapEndStr})
-                            </span>
-                          </div>
-                        </div>
-                        <span className="shrink-0 font-mono text-[11px] font-bold text-gray-500 sm:text-xs">
-                          {formatHoursMins(gapSeconds)}
-                        </span>
-                      </div>
-                    );
-                  }
-                }
+                const gapElement = nextLog
+                  ? renderUntrackedGap(
+                      new Date(nextLog.ended_at),
+                      new Date(log.started_at),
+                      `gap-${log.id}-${nextLog.id}`
+                    )
+                  : null;
 
                 return (
                   <div key={log.id} className="py-0.5">
@@ -472,9 +545,31 @@ export const DayTimeline24h = ({
                   </div>
                 );
               })}
+
+              {/* Gap before earliest log (bottom of timeline) */}
+              {renderUntrackedGap(
+                dayStart,
+                new Date(sortedLogs[sortedLogs.length - 1].started_at),
+                "earliest-untracked-gap"
+              )}
             </div>
           )}
         </>
+      )}
+
+      {/* Untracked Log Modal */}
+      {modalSlot && (
+        <AddUntrackedLogModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setModalSlot(null);
+          }}
+          slotStart={modalSlot.start}
+          slotEnd={modalSlot.end}
+          activeDate={activeDate}
+          categories={allCategories}
+        />
       )}
     </div>
   );

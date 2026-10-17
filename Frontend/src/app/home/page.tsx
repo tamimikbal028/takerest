@@ -75,6 +75,7 @@ const Home = () => {
         onSelectDate={setSelectedTimelineDate}
         todayStr={todayStr}
         isLoading={isSummaryLoading}
+        categories={categories}
       />
     </div>
   );

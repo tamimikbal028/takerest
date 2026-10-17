@@ -22,6 +22,8 @@ import {
   supabaseGetTodaySummary,
   supabaseDeleteTimeLog,
   supabaseGetMonthStudySummary,
+  supabaseCreateTimeLog,
+  type CreateTimeLogPayload,
 } from "@/services/supabase/logs.supabase";
 import { TRACKER_KEYS } from "@/constants/queryKeys";
 import type {
@@ -291,6 +293,24 @@ const useDaySummary = (date?: string) => {
   };
 };
 
+const useCreateTimeLog = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<{ log: TimeLog }>,
+    Error,
+    CreateTimeLogPayload
+  >({
+    mutationFn: (payload) => supabaseCreateTimeLog(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [TRACKER_KEYS.SUMMARY] });
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to add time log");
+    },
+  });
+};
+
 const useDeleteTimeLog = () => {
   const queryClient = useQueryClient();
 
@@ -337,6 +357,7 @@ const trackerHooks = {
   useSaveChunk,
   useSwitchTimer,
   useDaySummary,
+  useCreateTimeLog,
   useDeleteTimeLog,
   useMonthStudySummary,
 } as const;
