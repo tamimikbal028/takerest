@@ -243,7 +243,7 @@ export const DayTimeline24h = ({
   const pmSlices = getSlicesForHalf(720, 1440);
 
   return (
-    <div className="relative z-0 rounded-3xl border border-gray-200 bg-white p-4 shadow-xs sm:p-6">
+    <div className="relative rounded-3xl border border-gray-200 bg-white p-4 shadow-xs sm:p-6">
       {/* Top Header: Title & Total Logs count + Date Controller */}
       <div className="mb-4 flex flex-col gap-3 border-b border-gray-100 pb-3 sm:flex-row sm:items-center sm:justify-between sm:pb-4">
         <div className="flex items-center justify-between gap-2.5 sm:justify-start">

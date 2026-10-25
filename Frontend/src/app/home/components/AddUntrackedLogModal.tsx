@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   Clock,
@@ -321,7 +322,7 @@ export const AddUntrackedLogModal: React.FC<AddUntrackedLogModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-3 backdrop-blur-xs duration-200 sm:p-4 md:p-6">
       <div
         className="relative my-auto flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-2xl transition-all"
@@ -691,6 +692,7 @@ export const AddUntrackedLogModal: React.FC<AddUntrackedLogModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
