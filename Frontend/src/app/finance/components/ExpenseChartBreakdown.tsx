@@ -23,10 +23,7 @@ export const ExpenseChartBreakdown: React.FC<ExpenseChartBreakdownProps> = ({
   const { dailyChart, categoryBreakdown, totalExpense } = summary;
 
   // Maximum daily expense for relative scaling
-  const maxExpense = Math.max(
-    ...dailyChart.map((d) => d.expense),
-    100
-  );
+  const maxExpense = Math.max(...dailyChart.map((d) => d.expense), 100);
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
@@ -36,11 +33,11 @@ export const ExpenseChartBreakdown: React.FC<ExpenseChartBreakdownProps> = ({
           <div className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-amber-600" />
             <h3 className="text-sm font-bold text-gray-900">
-              দৈনিক খরচের ধারা (Daily Spending Trend)
+              Daily Spending Trend
             </h3>
           </div>
           <span className="text-xs font-bold text-gray-400">
-            মোট: ৳{totalExpense.toLocaleString("en-IN")}
+            Total: ৳{totalExpense.toLocaleString("en-IN")}
           </span>
         </div>
 
@@ -49,7 +46,7 @@ export const ExpenseChartBreakdown: React.FC<ExpenseChartBreakdownProps> = ({
             এই সময়ে কোনো খরচের তথ্য পাওয়া যায়নি।
           </div>
         ) : (
-          <div className="flex h-48 items-end gap-2 pt-6 pb-2 overflow-x-auto">
+          <div className="flex h-48 items-end gap-2 overflow-x-auto pt-6 pb-2">
             {dailyChart.map((point) => {
               const heightPercent = Math.max(
                 6,
@@ -59,12 +56,12 @@ export const ExpenseChartBreakdown: React.FC<ExpenseChartBreakdownProps> = ({
               return (
                 <div
                   key={point.date}
-                  className="group flex flex-1 min-w-[38px] flex-col items-center gap-1.5"
+                  className="group flex min-w-[38px] flex-1 flex-col items-center gap-1.5"
                 >
                   <div className="relative flex h-36 w-full items-end justify-center">
                     <div
                       style={{ height: `${heightPercent}%` }}
-                      className="w-4 rounded-t-lg bg-amber-500 transition-all group-hover:bg-amber-600 group-hover:scale-y-105"
+                      className="w-4 rounded-t-lg bg-amber-500 transition-all group-hover:scale-y-105 group-hover:bg-amber-600"
                       title={`${point.date}: ৳${point.expense} (${point.count} টি খরচ)`}
                     />
                   </div>
@@ -84,7 +81,7 @@ export const ExpenseChartBreakdown: React.FC<ExpenseChartBreakdownProps> = ({
           <div className="flex items-center gap-2">
             <PieChart className="h-4 w-4 text-blue-600" />
             <h3 className="text-sm font-bold text-gray-900">
-              খাত অনুযায়ী খরচের বণ্টন (Category Breakdown)
+              Category Breakdown
             </h3>
           </div>
           <span className="text-xs font-bold text-gray-400">
@@ -97,11 +94,11 @@ export const ExpenseChartBreakdown: React.FC<ExpenseChartBreakdownProps> = ({
             কোনো খরচের খাত পাওয়া যায়নি।
           </div>
         ) : (
-          <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+          <div className="max-h-48 space-y-3 overflow-y-auto pr-1">
             {categoryBreakdown.map((cat) => (
               <div key={cat.category} className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex min-w-0 items-center gap-2">
                     <span
                       className="h-2.5 w-2.5 shrink-0 rounded-full"
                       style={{ backgroundColor: cat.color }}
@@ -113,7 +110,7 @@ export const ExpenseChartBreakdown: React.FC<ExpenseChartBreakdownProps> = ({
                       ({cat.count} টি)
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex shrink-0 items-center gap-2">
                     <span className="font-bold text-gray-900">
                       ৳{cat.total.toLocaleString("en-IN")}
                     </span>
