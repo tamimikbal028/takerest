@@ -302,3 +302,80 @@ GRANT ALL ON TABLE public.active_timer TO service_role;
 -- Grants for authenticated users (Frontend direct Supabase client)
 GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
+-- ========================================================
+-- 10. MONEY TRACKER (finance_transactions)
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.finance_transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  amount NUMERIC(12, 2) NOT NULL CHECK (amount >= 0),
+  type TEXT NOT NULL CHECK (type IN ('EXPENSE', 'INCOME')),
+  category TEXT NOT NULL,
+  payment_method TEXT NOT NULL DEFAULT 'Cash',
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  time TIME WITHOUT TIME ZONE DEFAULT CURRENT_TIME,
+  notes TEXT DEFAULT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_finance_user_date ON public.finance_transactions (user_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_finance_user_type ON public.finance_transactions (user_id, type);
+CREATE INDEX IF NOT EXISTS idx_finance_category ON public.finance_transactions (user_id, category);
+
+ALTER TABLE public.finance_transactions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage own finance transactions" ON public.finance_transactions;
+CREATE POLICY "Users can manage own finance transactions"
+  ON public.finance_transactions FOR ALL TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+DROP TRIGGER IF EXISTS trigger_finance_transactions_updated_at ON public.finance_transactions;
+CREATE TRIGGER trigger_finance_transactions_updated_at
+  BEFORE UPDATE ON public.finance_transactions
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- ========================================================
+-- 11. GUNAH / MUHASABAH TRACKER (sin_logs)
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.sin_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  category TEXT NOT NULL,
+  title TEXT NOT NULL,
+  severity TEXT NOT NULL DEFAULT 'MINOR' CHECK (severity IN ('MINOR', 'MODERATE', 'MAJOR')),
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  time TIME WITHOUT TIME ZONE DEFAULT CURRENT_TIME,
+  is_repented BOOLEAN NOT NULL DEFAULT false,
+  repentance_action TEXT DEFAULT NULL,
+  trigger TEXT DEFAULT NULL,
+  notes TEXT DEFAULT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sin_logs_user_date ON public.sin_logs (user_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_sin_logs_user_category ON public.sin_logs (user_id, category);
+CREATE INDEX IF NOT EXISTS idx_sin_logs_repented ON public.sin_logs (user_id, is_repented);
+
+ALTER TABLE public.sin_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage own sin logs" ON public.sin_logs;
+CREATE POLICY "Users can manage own sin logs"
+  ON public.sin_logs FOR ALL TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+DROP TRIGGER IF EXISTS trigger_sin_logs_updated_at ON public.sin_logs;
+CREATE TRIGGER trigger_sin_logs_updated_at
+  BEFORE UPDATE ON public.sin_logs
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+GRANT ALL ON TABLE public.finance_transactions TO authenticated;
+GRANT ALL ON TABLE public.finance_transactions TO service_role;
+GRANT ALL ON TABLE public.sin_logs TO authenticated;
+GRANT ALL ON TABLE public.sin_logs TO service_role;
+

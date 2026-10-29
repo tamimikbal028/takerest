@@ -59,6 +59,16 @@ export const routes: RouteConfig[] = [
     category: "main",
   },
 
+  // Money Tracker (Takar Hisab)
+  {
+    path: "/finance",
+    display: true,
+    Component: lazy(() => import("@/app/finance/page")),
+    requireAuth: true,
+    title: "Daily Expense Tracker - Take Rest",
+    category: "main",
+  },
+
   // Statistics
   {
     path: "/statistics",

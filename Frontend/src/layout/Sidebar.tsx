@@ -1,5 +1,12 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, CheckSquare, BarChart3, Settings, User } from "lucide-react";
+import {
+  LayoutDashboard,
+  CheckSquare,
+  BarChart3,
+  Settings,
+  User,
+  Coins,
+} from "lucide-react";
 import authHooks from "@/hooks/useAuth";
 
 interface SidebarProps {
@@ -16,6 +23,12 @@ const Sidebar = ({ onClose }: SidebarProps) => {
       label: "Home",
       path: "/",
       active: location.pathname === "/",
+    },
+    {
+      icon: Coins,
+      label: "Finances",
+      path: "/finance",
+      active: location.pathname.startsWith("/finance"),
     },
     {
       icon: BarChart3,
@@ -53,9 +66,7 @@ const Sidebar = ({ onClose }: SidebarProps) => {
             <span className="text-base font-bold tracking-tight text-gray-900">
               Take Rest
             </span>
-            <span className="text-xs font-medium text-gray-400">
-              Workspace
-            </span>
+            <span className="text-xs font-medium text-gray-400">Workspace</span>
           </div>
         </NavLink>
 

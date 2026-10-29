@@ -18,6 +18,12 @@ What Gets Created:
 1. users: Core user profile (synced with auth.users).
 2. categories: Groups created by user (e.g., Deen, Academic, Others).
 3. activities: Specific items under groups (e.g., Namaz, Talimuddin, Courses).
-4. time_logs: Recorded time chunks (start_time, end_time, duration, is_wasted).
-5. active_timer: Keeps track of the current ongoing timer so refreshes/closing never lose time.
-6. Auto-provisioning: When a new user registers, a permanent 'Study' category (with Course 1-5) and an 'Others' category (with Rest, Meal, Break) are automatically created for them!
+7. finance_transactions: Money tracker (daily expenses & income with categories, amounts, payment methods).
+8. sin_logs: Gunah / Muhasabah tracker (daily sins, severity, triggers, and repentance/Tawbah status).
+
+Existing Database Migration:
+------------------------------------------------------------------------------
+If you ALREADY ran db_setup_master.sql earlier, you only need to run:
+   sql_code_folder/08_finance_and_sins.sql
+in Supabase SQL Editor to add the two new features!
+
