@@ -178,7 +178,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                     onClick={() => handleQuickAddAmount(amt)}
                     className="cursor-pointer rounded-lg border border-amber-200 bg-white px-2 py-0.5 text-xs font-bold text-gray-700 transition hover:border-amber-400 hover:bg-amber-50 hover:text-amber-800 active:scale-95"
                   >
-                    +৳{amt}
+                    {amt}
                   </button>
                 ))}
               </div>
