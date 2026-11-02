@@ -5,6 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import "@/index.css";
 import App from "@/App";
+import { registerServiceWorker } from "@/registerServiceWorker";
+
+// Register Service Worker for PWA standalone mode and offline caching
+registerServiceWorker();
 
 const queryClient = new QueryClient({
   defaultOptions: {
