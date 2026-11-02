@@ -10,31 +10,40 @@ import type {
 } from "@/types";
 
 export const EXPENSE_CATEGORIES = [
-  "খাবার ও নাস্তা (Food & Snacks)",
-  "যাতায়াত ও ভাড়া (Transport / Commute)",
-  "বাজার ও মুদি (Groceries & Bazar)",
-  "চা-পান ও রিফ্রেশমেন্ট (Tea & Snacks)",
-  "মোবাইল রিচার্জ ও নেট (Mobile & Net)",
-  "বিল ও ইউটিলিটি (Bills & Utilities)",
-  "ঔষধ ও চিকিৎসা (Medicine & Health)",
-  "কেনাকাটা ও পোশাক (Shopping)",
-  "দান-সদকা (Charity / Sadaqah)",
-  "পরিবার ও ব্যক্তিগত (Family & Personal)",
-  "অন্যান্য খরচ (Others)",
+  "খাবার",
+  "মোবাইল রিচার্জ",
+  "তালিমুদ্দীন বেতন",
+  "ইন্টারনেট বিল",
+  "ধার শোধ করা",
+  "যাতায়াত",
+  "অন্যান্য খরচ",
 ] as const;
 
 export const FINANCE_CATEGORY_COLORS: Record<string, string> = {
-  "খাবার ও নাস্তা (Food & Snacks)": "#F59E0B", // Amber
-  "যাতায়াত ও ভাড়া (Transport / Commute)": "#3B82F6", // Blue
-  "বাজার ও মুদি (Groceries & Bazar)": "#10B981", // Emerald
-  "চা-পান ও রিফ্রেশমেন্ট (Tea & Snacks)": "#D97706", // Warm amber
-  "মোবাইল রিচার্জ ও নেট (Mobile & Net)": "#06B6D4", // Cyan
-  "বিল ও ইউটিলিটি (Bills & Utilities)": "#EF4444", // Red
-  "ঔষধ ও চিকিৎসা (Medicine & Health)": "#14B8A6", // Teal
-  "কেনাকাটা ও পোশাক (Shopping)": "#EC4899", // Pink
-  "দান-সদকা (Charity / Sadaqah)": "#059669", // Dark Emerald
-  "পরিবার ও ব্যক্তিগত (Family & Personal)": "#6366F1", // Indigo
-  "অন্যান্য খরচ (Others)": "#64748B", // Slate
+  "খাবার": "#F59E0B",
+  "মোবাইল রিচার্জ": "#06B6D4",
+  "তালিমুদ্দীন বেতন": "#10B981",
+  "ইন্টারনেট বিল": "#3B82F6",
+  "ধার শোধ করা": "#EF4444",
+  "যাতায়াত": "#8B5CF6",
+  "অন্যান্য খরচ": "#64748B",
+  // Legacy mappings for backwards compatibility
+  "সকাল নাস্তা": "#F59E0B",
+  "দুপুর খাবার": "#EA580C",
+  "বিকাল নাস্তা": "#F97316",
+  "রাত খাবার": "#8B5CF6",
+  "চা ও নাস্তা": "#D97706",
+  "খাবার ও নাস্তা (Food & Snacks)": "#F59E0B",
+  "যাতায়াত ও ভাড়া (Transport / Commute)": "#8B5CF6",
+  "বাজার ও মুদি (Groceries & Bazar)": "#10B981",
+  "চা-পান ও রিফ্রেশমেন্ট (Tea & Snacks)": "#D97706",
+  "মোবাইল রিচার্জ ও নেট (Mobile & Net)": "#06B6D4",
+  "বিল ও ইউটিলিটি (Bills & Utilities)": "#EF4444",
+  "ঔষধ ও চিকিৎসা (Medicine & Health)": "#14B8A6",
+  "কেনাকাটা ও পোশাক (Shopping)": "#EC4899",
+  "দান-সদকা (Charity / Sadaqah)": "#059669",
+  "পরিবার ও ব্যক্তিগত (Family & Personal)": "#6366F1",
+  "অন্যান্য খরচ (Others)": "#64748B",
 };
 
 // 1. Fetch Expenses directly from Supabase

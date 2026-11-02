@@ -73,6 +73,14 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
     });
   };
 
+  const categoriesList =
+    transaction?.category &&
+    !EXPENSE_CATEGORIES.includes(
+      transaction.category as (typeof EXPENSE_CATEGORIES)[number]
+    )
+      ? [transaction.category, ...EXPENSE_CATEGORIES]
+      : EXPENSE_CATEGORIES;
+
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-3 backdrop-blur-xs duration-200 sm:p-4"
@@ -105,7 +113,10 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-1 flex-col overflow-hidden"
+        >
           <div className="flex-1 space-y-4 overflow-y-auto p-5 sm:p-6">
             <div className="rounded-2xl border border-gray-200 bg-gray-50/50 p-4">
               <label className="block text-xs font-bold text-gray-500 uppercase">
@@ -126,7 +137,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
             </div>
 
             {/* Date & Time Row */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
+            <div className="grid grid-cols-1 gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 p-3 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-xs font-bold text-gray-700">
                   তারিখ (Date)
@@ -170,7 +181,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-2xl border border-gray-200 py-2.5 pr-3.5 pl-10 text-xs font-semibold text-gray-800 transition focus:border-blue-500 focus:outline-none focus:ring-3 focus:ring-blue-500/10 sm:text-sm"
+                  className="w-full rounded-2xl border border-gray-200 py-2.5 pr-3.5 pl-10 text-xs font-semibold text-gray-800 transition focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 focus:outline-none sm:text-sm"
                 />
               </div>
             </div>
@@ -179,8 +190,8 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
               <label className="mb-1 block text-xs font-bold text-gray-700">
                 খরচের খাত (Category) *
               </label>
-              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 max-h-40 overflow-y-auto pr-1">
-                {EXPENSE_CATEGORIES.map((cat) => {
+              <div className="grid max-h-40 grid-cols-2 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-3">
+                {categoriesList.map((cat) => {
                   const isSelected = category === cat;
                   const color = FINANCE_CATEGORY_COLORS[cat] || "#64748B";
                   return (
@@ -243,7 +254,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                   rows={2}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full rounded-2xl border border-gray-200 py-2.5 pr-3 pl-10 text-xs font-medium text-gray-800 transition focus:border-blue-500 focus:outline-none focus:ring-3 focus:ring-blue-500/10 sm:text-sm"
+                  className="w-full rounded-2xl border border-gray-200 py-2.5 pr-3 pl-10 text-xs font-medium text-gray-800 transition focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 focus:outline-none sm:text-sm"
                 />
               </div>
             </div>

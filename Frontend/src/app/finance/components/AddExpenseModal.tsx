@@ -24,18 +24,18 @@ interface AddExpenseModalProps {
   initialDate?: string;
 }
 
-const QUICK_AMOUNTS = [20, 50, 100, 200, 500, 1000];
+const QUICK_AMOUNTS = [10, 15, 20, 25, 30, 40, 50];
 
 const COMMON_EXPENSE_PRESETS = [
+  "সকাল নাস্তা",
+  "দুপুর খাবার",
+  "বিকাল নাস্তা",
+  "রাত খাবার",
   "চা ও নাস্তা",
-  "রিকশা ভাড়া",
-  "দুপুরের খাবার (Lunch)",
-  "বাস / যাতায়াত ভাড়া",
-  "কাঁচাবাজার ও সদাই",
   "মোবাইল রিচার্জ",
-  "রাতের ডিনার",
-  "ঔষধ ক্রয়",
-  "চা ও রিফ্রেশমেন্ট",
+  "তালিমুদ্দীন বেতন",
+  "ইন্টারনেট বিল",
+  "ধার শোধ করা",
 ];
 
 const PAYMENT_METHODS = ["Cash", "bKash", "Nagad", "Bank Transfer", "Card"];
@@ -55,7 +55,11 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     initialDate || new Date().toISOString().split("T")[0]
   );
   const [time, setTime] = useState<string>(
-    new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })
+    new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
   );
   const [notes, setNotes] = useState<string>("");
 
@@ -68,19 +72,18 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 
   const handleSelectPreset = (preset: string) => {
     setTitle(preset);
-    // Auto-suggest category if matches
-    if (preset.includes("চা") || preset.includes("নাস্তা")) {
-      setCategory("চা-পান ও রিফ্রেশমেন্ট (Tea & Snacks)");
-    } else if (preset.includes("ভাড়া") || preset.includes("রিকশা") || preset.includes("বাস")) {
-      setCategory("যাতায়াত ও ভাড়া (Transport / Commute)");
-    } else if (preset.includes("খাবার") || preset.includes("Lunch") || preset.includes("ডিনার")) {
-      setCategory("খাবার ও নাস্তা (Food & Snacks)");
-    } else if (preset.includes("বাজার") || preset.includes("সদাই")) {
-      setCategory("বাজার ও মুদি (Groceries & Bazar)");
-    } else if (preset.includes("রিচার্জ")) {
-      setCategory("মোবাইল রিচার্জ ও নেট (Mobile & Net)");
-    } else if (preset.includes("ঔষধ")) {
-      setCategory("ঔষধ ও চিকিৎসা (Medicine & Health)");
+    if (
+      preset === "সকাল নাস্তা" ||
+      preset === "দুপুর খাবার" ||
+      preset === "বিকাল নাস্তা" ||
+      preset === "রাত খাবার" ||
+      preset === "চা ও নাস্তা"
+    ) {
+      setCategory("খাবার");
+    } else if (
+      EXPENSE_CATEGORIES.includes(preset as (typeof EXPENSE_CATEGORIES)[number])
+    ) {
+      setCategory(preset);
     }
   };
 
@@ -147,7 +150,9 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                 কত টাকা খরচ করলেন? (Amount in ৳) *
               </label>
               <div className="mt-1 flex items-center gap-2">
-                <span className="text-2xl font-black text-amber-600 sm:text-3xl">৳</span>
+                <span className="text-2xl font-black text-amber-600 sm:text-3xl">
+                  ৳
+                </span>
                 <input
                   type="number"
                   step="any"
@@ -162,8 +167,10 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               </div>
 
               {/* Quick Amount Chips */}
-              <div className="mt-3 flex flex-wrap items-center gap-1.5 pt-2 border-t border-amber-200/50">
-                <span className="text-[11px] font-semibold text-amber-800">দ্রুত যোগ করুন:</span>
+              <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-amber-200/50 pt-2">
+                <span className="text-[11px] font-semibold text-amber-800">
+                  দ্রুত যোগ করুন:
+                </span>
                 {QUICK_AMOUNTS.map((amt) => (
                   <button
                     key={amt}
@@ -178,7 +185,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             </div>
 
             {/* 2. Date & Time Row - PROMINENT: KUNDIN & KOKHN */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
+            <div className="grid grid-cols-1 gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 p-3 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-xs font-bold text-gray-700">
                   কোন দিন খরচ করেছেন? (Date) *
@@ -224,7 +231,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                   placeholder="যেমন: দুপুরের লাঞ্চ, রিকশা ভাড়া, চা-বিস্কুট..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-2xl border border-gray-200 py-2.5 pr-3.5 pl-10 text-xs font-semibold text-gray-800 transition focus:border-blue-500 focus:outline-none focus:ring-3 focus:ring-blue-500/10 sm:text-sm"
+                  className="w-full rounded-2xl border border-gray-200 py-2.5 pr-3.5 pl-10 text-xs font-semibold text-gray-800 transition focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 focus:outline-none sm:text-sm"
                 />
               </div>
 
@@ -248,7 +255,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               <label className="mb-1 block text-xs font-bold text-gray-700">
                 খরচের খাত (Category) *
               </label>
-              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 max-h-40 overflow-y-auto pr-1">
+              <div className="grid max-h-40 grid-cols-2 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-3">
                 {EXPENSE_CATEGORIES.map((cat) => {
                   const isSelected = category === cat;
                   const color = FINANCE_CATEGORY_COLORS[cat] || "#64748B";
@@ -315,7 +322,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                   placeholder="কোনো বিশেষ মন্তব্য বা বিস্তারিত..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full rounded-2xl border border-gray-200 py-2.5 pr-3 pl-10 text-xs font-medium text-gray-800 transition focus:border-blue-500 focus:outline-none focus:ring-3 focus:ring-blue-500/10 sm:text-sm"
+                  className="w-full rounded-2xl border border-gray-200 py-2.5 pr-3 pl-10 text-xs font-medium text-gray-800 transition focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 focus:outline-none sm:text-sm"
                 />
               </div>
             </div>
