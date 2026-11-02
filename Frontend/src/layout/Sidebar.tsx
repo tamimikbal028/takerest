@@ -6,6 +6,7 @@ import {
   Settings,
   User,
   Coins,
+  StickyNote,
 } from "lucide-react";
 import authHooks from "@/hooks/useAuth";
 
@@ -29,6 +30,12 @@ const Sidebar = ({ onClose }: SidebarProps) => {
       label: "Finances",
       path: "/finance",
       active: location.pathname.startsWith("/finance"),
+    },
+    {
+      icon: StickyNote,
+      label: "Notes",
+      path: "/notes",
+      active: location.pathname.startsWith("/notes"),
     },
     {
       icon: BarChart3,

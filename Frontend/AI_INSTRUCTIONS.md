@@ -51,6 +51,7 @@ _(Add any strict rules you want the AI to ALWAYS follow)_
      } as const; // <--- MANDATORY 'as const'
      export default authServices;
      ```
+
 5. **Strict Hook File Structure & Export Pattern**: Hook files (`.ts` files in `src/hooks/`) MUST follow the exact same structural pattern as service files.
    - All internal hooks MUST be grouped into a single object named in **plural** form (e.g., `const authHooks = { useLogin, useRegister }`).
    - **CRITICAL**: You MUST use `as const` at the end of the object grouping. **NEVER FORGET THIS**.
@@ -112,41 +113,44 @@ _(Add any strict rules you want the AI to ALWAYS follow)_
    };
    ```
 10. **Data Access in Components**: Service functions always return `response.data`. The hook wraps this in React Query. In the `.tsx` component, how you access the data depends on whether the response is paginated:
-   - **Non-paginated** (uses `useQuery`): Access as `data?.data.[key]`
-     ```tsx
-     const { data } = useGroupDetails();
-     const group = data?.data.group;
-     const meta = data?.data.meta;
-     ```
-   - **Paginated** (uses `useInfiniteQuery`): Data is split across `pages`. Flatten it to get a single array:
-     ```tsx
-     const { data } = useGroupPosts();
-     const posts = data?.pages.flatMap((page) => page.data.posts) ?? [];
-     const pagination = data?.pages.at(-1)?.data.pagination; // last page's pagination
-     ```
+
+- **Non-paginated** (uses `useQuery`): Access as `data?.data.[key]`
+  ```tsx
+  const { data } = useGroupDetails();
+  const group = data?.data.group;
+  const meta = data?.data.meta;
+  ```
+- **Paginated** (uses `useInfiniteQuery`): Data is split across `pages`. Flatten it to get a single array:
+  ```tsx
+  const { data } = useGroupPosts();
+  const posts = data?.pages.flatMap((page) => page.data.posts) ?? [];
+  const pagination = data?.pages.at(-1)?.data.pagination; // last page's pagination
+  ```
+
 11. **Strict Error Typing & Handling**: Every React Query `onError` callback MUST explicitly define the error type as `AxiosError<ApiError>` or use the `handleMutationError` Higher-Order Function. You MUST NEVER write raw `toast.error` logic.
-   - **Preferred Pattern (Higher-Order Function)**:
 
-     ```ts
-     import { handleMutationError } from "../utils/errorHandler";
+- **Preferred Pattern (Higher-Order Function)**:
 
-     // inside useMutation:
-     onError: handleMutationError("Default fallback message"),
-     ```
+  ```ts
+  import { handleMutationError } from "../utils/errorHandler";
 
-   - **Alternative Pattern (For custom rollbacks/logic)**:
+  // inside useMutation:
+  onError: handleMutationError("Default fallback message"),
+  ```
 
-     ```ts
-     import type { AxiosError } from "axios";
-     import type { ApiError } from "../types";
-     import { handleMutationError } from "../utils/errorHandler";
+- **Alternative Pattern (For custom rollbacks/logic)**:
 
-     // inside useMutation:
-     onError: (error: AxiosError<ApiError>, _variables, context) => {
-       // Rollback logic...
-       handleMutationError(error, "Default fallback message");
-     };
-     ```
+  ```ts
+  import type { AxiosError } from "axios";
+  import type { ApiError } from "../types";
+  import { handleMutationError } from "../utils/errorHandler";
+
+  // inside useMutation:
+  onError: (error: AxiosError<ApiError>, _variables, context) => {
+    // Rollback logic...
+    handleMutationError(error, "Default fallback message");
+  };
+  ```
 
 12. **Absolute Alias Imports in App Folder**: Inside the `src/app/` folder, all imports (both components, hooks, services, utils, assets, etc.) MUST use absolute paths starting with `@/` rather than relative paths (e.g. use `@/app/messages/ConversationList` instead of `./ConversationList` or `../ConversationList`).
 
@@ -154,7 +158,7 @@ _(Add any strict rules you want the AI to ALWAYS follow)_
 
 _(Write down what you are currently working on so the AI has immediate context)_
 
-- Currently building the Gaming section and dashboard UI.
+- Comprehensive Life OS with Continuous 24h Tracker, Finance Tracker, and Notes & Scratchpad. See [PROJECT_OVERVIEW.md](file:///e:/WebApp/Deploy/takerest/Frontend/PROJECT_OVERVIEW.md) for full context.
 - ...
 
 ---

@@ -69,6 +69,16 @@ export const routes: RouteConfig[] = [
     category: "main",
   },
 
+  // Notes & Scratchpad
+  {
+    path: "/notes",
+    display: true,
+    Component: lazy(() => import("@/app/notes/page")),
+    requireAuth: true,
+    title: "Notes - Take Rest",
+    category: "main",
+  },
+
   // Statistics
   {
     path: "/statistics",

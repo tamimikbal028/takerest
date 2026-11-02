@@ -379,3 +379,42 @@ GRANT ALL ON TABLE public.finance_transactions TO service_role;
 GRANT ALL ON TABLE public.sin_logs TO authenticated;
 GRANT ALL ON TABLE public.sin_logs TO service_role;
 
+-- ========================================================
+-- 12. NOTES & SCRATCHPAD (notes)
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.notes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL DEFAULT '',
+  note_type TEXT NOT NULL DEFAULT 'TEXT' CHECK (note_type IN ('TEXT', 'CHECKLIST')),
+  checklist_items JSONB NOT NULL DEFAULT '[]'::jsonb,
+  color TEXT NOT NULL DEFAULT '#ffffff',
+  is_pinned BOOLEAN NOT NULL DEFAULT false,
+  is_archived BOOLEAN NOT NULL DEFAULT false,
+  tags TEXT[] DEFAULT ARRAY[]::TEXT[],
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notes_user_pinned ON public.notes (user_id, is_pinned DESC, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notes_user_type ON public.notes (user_id, note_type);
+CREATE INDEX IF NOT EXISTS idx_notes_user_archived ON public.notes (user_id, is_archived);
+CREATE INDEX IF NOT EXISTS idx_notes_created_at ON public.notes (user_id, created_at DESC);
+
+ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage own notes" ON public.notes;
+CREATE POLICY "Users can manage own notes"
+  ON public.notes FOR ALL TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+DROP TRIGGER IF EXISTS trigger_notes_updated_at ON public.notes;
+CREATE TRIGGER trigger_notes_updated_at
+  BEFORE UPDATE ON public.notes
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+GRANT ALL ON TABLE public.notes TO authenticated;
+GRANT ALL ON TABLE public.notes TO service_role;
+
