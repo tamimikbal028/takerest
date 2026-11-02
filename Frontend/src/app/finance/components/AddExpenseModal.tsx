@@ -168,9 +168,6 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
 
               {/* Quick Amount Chips */}
               <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-amber-200/50 pt-2">
-                <span className="text-[11px] font-semibold text-amber-800">
-                  দ্রুত যোগ করুন:
-                </span>
                 {QUICK_AMOUNTS.map((amt) => (
                   <button
                     key={amt}
