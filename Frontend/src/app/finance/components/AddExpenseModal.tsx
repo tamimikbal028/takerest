@@ -14,6 +14,7 @@ import type { CreateFinancePayload } from "@/types";
 import {
   EXPENSE_CATEGORIES,
   FINANCE_CATEGORY_COLORS,
+  PAYMENT_METHODS,
 } from "@/services/supabase/finance.supabase";
 
 interface AddExpenseModalProps {
@@ -37,8 +38,6 @@ const COMMON_EXPENSE_PRESETS = [
   "ইন্টারনেট বিল",
   "ধার শোধ করা",
 ];
-
-const PAYMENT_METHODS = ["Cash", "bKash", "Nagad", "Bank Transfer", "Card"];
 
 export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   isOpen,
@@ -146,9 +145,6 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
           <div className="flex-1 space-y-4 overflow-y-auto p-5 sm:p-6">
             {/* 1. Amount Input Card */}
             <div className="rounded-2xl border border-amber-200/80 bg-linear-to-br from-amber-50/60 to-orange-50/30 p-4 transition-all focus-within:border-amber-500 focus-within:bg-white focus-within:ring-3 focus-within:ring-amber-500/15">
-              <label className="block text-xs font-bold text-amber-900 uppercase">
-                কত টাকা খরচ করলেন? (Amount in ৳) *
-              </label>
               <div className="mt-1 flex items-center gap-2">
                 <span className="text-2xl font-black text-amber-600 sm:text-3xl">
                   ৳

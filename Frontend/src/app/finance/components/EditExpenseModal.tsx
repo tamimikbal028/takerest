@@ -14,6 +14,7 @@ import type { FinanceTransaction, UpdateFinancePayload } from "@/types";
 import {
   EXPENSE_CATEGORIES,
   FINANCE_CATEGORY_COLORS,
+  PAYMENT_METHODS,
 } from "@/services/supabase/finance.supabase";
 
 interface EditExpenseModalProps {
@@ -23,8 +24,6 @@ interface EditExpenseModalProps {
   isPending: boolean;
   transaction: FinanceTransaction | null;
 }
-
-const PAYMENT_METHODS = ["Cash", "bKash", "Nagad", "Bank Transfer", "Card"];
 
 export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   isOpen,
@@ -80,6 +79,14 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
     )
       ? [transaction.category, ...EXPENSE_CATEGORIES]
       : EXPENSE_CATEGORIES;
+
+  const paymentMethodsList =
+    transaction?.payment_method &&
+    !PAYMENT_METHODS.includes(
+      transaction.payment_method as (typeof PAYMENT_METHODS)[number]
+    )
+      ? [transaction.payment_method, ...PAYMENT_METHODS]
+      : PAYMENT_METHODS;
 
   return createPortal(
     <div
@@ -223,7 +230,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
                 Payment Method
               </label>
               <div className="flex flex-wrap gap-1.5">
-                {PAYMENT_METHODS.map((method) => {
+                {paymentMethodsList.map((method) => {
                   const isSelected = paymentMethod === method;
                   return (
                     <button

@@ -19,13 +19,24 @@ export const EXPENSE_CATEGORIES = [
   "অন্যান্য খরচ",
 ] as const;
 
+export const PAYMENT_METHODS = [
+  "Cash",
+  "bKash",
+  "Nagad",
+  "Rocket",
+  "Bank Transfer",
+  "Card",
+] as const;
+
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
 export const FINANCE_CATEGORY_COLORS: Record<string, string> = {
-  "খাবার": "#F59E0B",
+  খাবার: "#F59E0B",
   "মোবাইল রিচার্জ": "#06B6D4",
   "তালিমুদ্দীন বেতন": "#10B981",
   "ইন্টারনেট বিল": "#3B82F6",
   "ধার শোধ করা": "#EF4444",
-  "যাতায়াত": "#8B5CF6",
+  যাতায়াত: "#8B5CF6",
   "অন্যান্য খরচ": "#64748B",
   // Legacy mappings for backwards compatibility
   "সকাল নাস্তা": "#F59E0B",
