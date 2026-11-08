@@ -5,7 +5,6 @@ import {
   Coins,
   Calendar,
   Clock,
-  Tag,
   FileText,
   CreditCard,
   Sparkles,
@@ -27,18 +26,6 @@ interface AddExpenseModalProps {
 
 const QUICK_AMOUNTS = [10, 15, 20, 25, 30, 40, 50];
 
-const COMMON_EXPENSE_PRESETS = [
-  "সকাল নাস্তা",
-  "দুপুর খাবার",
-  "বিকাল নাস্তা",
-  "রাত খাবার",
-  "চা ও নাস্তা",
-  "মোবাইল রিচার্জ",
-  "তালিমুদ্দীন বেতন",
-  "ইন্টারনেট বিল",
-  "ধার শোধ করা",
-];
-
 export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   isOpen,
   onClose,
@@ -47,7 +34,6 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   initialDate,
 }) => {
   const [amount, setAmount] = useState<string>("");
-  const [title, setTitle] = useState("");
   const [category, setCategory] = useState<string>(EXPENSE_CATEGORIES[0]);
   const [paymentMethod, setPaymentMethod] = useState<string>("Cash");
   const [date, setDate] = useState<string>(
@@ -69,30 +55,13 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     setAmount(String(current + add));
   };
 
-  const handleSelectPreset = (preset: string) => {
-    setTitle(preset);
-    if (
-      preset === "সকাল নাস্তা" ||
-      preset === "দুপুর খাবার" ||
-      preset === "বিকাল নাস্তা" ||
-      preset === "রাত খাবার" ||
-      preset === "চা ও নাস্তা"
-    ) {
-      setCategory("খাবার");
-    } else if (
-      EXPENSE_CATEGORIES.includes(preset as (typeof EXPENSE_CATEGORIES)[number])
-    ) {
-      setCategory(preset);
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const numAmount = parseFloat(amount);
-    if (!title.trim() || isNaN(numAmount) || numAmount <= 0) return;
+    if (isNaN(numAmount) || numAmount <= 0) return;
 
     onSubmit({
-      title: title.trim(),
+      title: category,
       amount: numAmount,
       type: "EXPENSE",
       category,
@@ -211,39 +180,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               </div>
             </div>
 
-            {/* 3. Title / Purpose */}
-            <div>
-              <label className="mb-1 block text-xs font-bold text-gray-700">
-                কী কাজে খরচ হলো? (Purpose / Description) *
-              </label>
-              <div className="relative flex items-center">
-                <Tag className="pointer-events-none absolute left-3.5 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  required
-                  placeholder="যেমন: দুপুরের লাঞ্চ, রিকশা ভাড়া, চা-বিস্কুট..."
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-2xl border border-gray-200 py-2.5 pr-3.5 pl-10 text-xs font-semibold text-gray-800 transition focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 focus:outline-none sm:text-sm"
-                />
-              </div>
-
-              {/* Quick Preset Buttons */}
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {COMMON_EXPENSE_PRESETS.map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => handleSelectPreset(preset)}
-                    className="cursor-pointer rounded-lg border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-semibold text-gray-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 active:scale-95"
-                  >
-                    {preset}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 4. Category Selector */}
+            {/* 3. Category Selector */}
             <div>
               <label className="mb-1 block text-xs font-bold text-gray-700">
                 খরচের খাত (Category) *
@@ -276,7 +213,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               </div>
             </div>
 
-            {/* 5. Payment Method */}
+            {/* 4. Payment Method */}
             <div>
               <label className="mb-1 block text-xs font-bold text-gray-700">
                 কীভাবে দিলেন? (Payment Method)
@@ -303,7 +240,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               </div>
             </div>
 
-            {/* 6. Notes (Optional) */}
+            {/* 5. Notes (Optional) */}
             <div>
               <label className="mb-1 block text-xs font-bold text-gray-700">
                 অতিরিক্ত নোট (Optional)
@@ -312,7 +249,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
                 <FileText className="pointer-events-none absolute top-3 left-3.5 h-4 w-4 text-gray-400" />
                 <textarea
                   rows={2}
-                  placeholder="কোনো বিশেষ মন্তব্য বা বিস্তারিত..."
+                  placeholder="যেমন: দুপুরের লাঞ্চ, রিকশা ভাড়া বা বিশেষ কোনো নোট..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="w-full rounded-2xl border border-gray-200 py-2.5 pr-3 pl-10 text-xs font-medium text-gray-800 transition focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 focus:outline-none sm:text-sm"
@@ -332,7 +269,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isPending || !title.trim() || !amount}
+              disabled={isPending || !amount || parseFloat(amount) <= 0}
               className="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-amber-600 px-5 py-2 text-xs font-bold text-white shadow-md shadow-amber-500/25 transition hover:bg-amber-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isPending ? (

@@ -5,7 +5,6 @@ import {
   Edit2,
   Calendar,
   Clock,
-  Tag,
   FileText,
   CreditCard,
   Sparkles,
@@ -32,7 +31,6 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   isPending,
   transaction,
 }) => {
-  const [title, setTitle] = useState("");
   const [amount, setAmount] = useState<string>("");
   const [category, setCategory] = useState<string>(EXPENSE_CATEGORIES[0]);
   const [paymentMethod, setPaymentMethod] = useState<string>("Cash");
@@ -42,7 +40,6 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
 
   useEffect(() => {
     if (transaction) {
-      setTitle(transaction.title);
       setAmount(String(transaction.amount));
       setCategory(transaction.category);
       setPaymentMethod(transaction.payment_method || "Cash");
@@ -57,11 +54,11 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const numAmount = parseFloat(amount);
-    if (!title.trim() || isNaN(numAmount) || numAmount <= 0) return;
+    if (isNaN(numAmount) || numAmount <= 0) return;
 
     onSubmit({
       id: transaction.id,
-      title: title.trim(),
+      title: category,
       amount: numAmount,
       type: "EXPENSE",
       category,
@@ -179,22 +176,6 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
 
             <div>
               <label className="mb-1 block text-xs font-bold text-gray-700">
-                কী কাজে খরচ হলো? (Description) *
-              </label>
-              <div className="relative flex items-center">
-                <Tag className="pointer-events-none absolute left-3.5 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-2xl border border-gray-200 py-2.5 pr-3.5 pl-10 text-xs font-semibold text-gray-800 transition focus:border-blue-500 focus:ring-3 focus:ring-blue-500/10 focus:outline-none sm:text-sm"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-bold text-gray-700">
                 খরচের খাত (Category) *
               </label>
               <div className="grid max-h-40 grid-cols-2 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-3">
@@ -277,7 +258,7 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isPending || !title.trim() || !amount}
+              disabled={isPending || !amount || parseFloat(amount) <= 0}
               className="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-blue-600 px-5 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-blue-700 active:scale-95 disabled:opacity-50"
             >
               <Sparkles className="h-4 w-4" />

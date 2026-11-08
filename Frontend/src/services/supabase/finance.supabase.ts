@@ -110,7 +110,7 @@ const createFinanceTransaction = async (
     .from("finance_transactions")
     .insert({
       user_id: userId,
-      title: payload.title.trim(),
+      title: payload.title?.trim() || payload.category,
       amount: Number(payload.amount),
       type: "EXPENSE",
       category: payload.category,

@@ -16,7 +16,7 @@ export interface FinanceTransaction {
 }
 
 export interface CreateFinancePayload {
-  title: string;
+  title?: string;
   amount: number;
   type?: TransactionType;
   category: string;
