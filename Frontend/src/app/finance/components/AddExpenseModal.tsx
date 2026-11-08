@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
   X,
@@ -12,9 +12,10 @@ import {
 import type { CreateFinancePayload } from "@/types";
 import {
   EXPENSE_CATEGORIES,
-  FINANCE_CATEGORY_COLORS,
   PAYMENT_METHODS,
 } from "@/services/supabase/finance.supabase";
+import financeHooks from "@/hooks/useFinance";
+import { ExpenseCategorySelector } from "./ExpenseCategorySelector";
 
 interface AddExpenseModalProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   isPending,
   initialDate,
 }) => {
+  const { categories } = financeHooks.useFinanceCategories();
   const [amount, setAmount] = useState<string>("");
   const [category, setCategory] = useState<string>(EXPENSE_CATEGORIES[0]);
   const [paymentMethod, setPaymentMethod] = useState<string>("Cash");
@@ -47,6 +49,12 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
     })
   );
   const [notes, setNotes] = useState<string>("");
+
+  useEffect(() => {
+    if (categories.length > 0 && !categories.includes(category)) {
+      setCategory(categories[0]);
+    }
+  }, [categories, category]);
 
   if (!isOpen) return null;
 
@@ -181,37 +189,10 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             </div>
 
             {/* 3. Category Selector */}
-            <div>
-              <label className="mb-1 block text-xs font-bold text-gray-700">
-                খরচের খাত (Category) *
-              </label>
-              <div className="grid max-h-40 grid-cols-2 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-3">
-                {EXPENSE_CATEGORIES.map((cat) => {
-                  const isSelected = category === cat;
-                  const color = FINANCE_CATEGORY_COLORS[cat] || "#64748B";
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setCategory(cat)}
-                      className={`flex cursor-pointer items-center gap-2 rounded-xl border p-2 text-left transition-all ${
-                        isSelected
-                          ? "border-blue-500 bg-blue-50/70 shadow-xs ring-2 ring-blue-500/20"
-                          : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                      }`}
-                    >
-                      <span
-                        className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: color }}
-                      />
-                      <span className="truncate text-[11px] font-bold text-gray-800">
-                        {cat}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <ExpenseCategorySelector
+              selectedCategory={category}
+              onSelectCategory={setCategory}
+            />
 
             {/* 4. Payment Method */}
             <div>

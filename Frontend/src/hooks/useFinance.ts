@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import financeServices from "@/services/supabase/finance.supabase";
+import financeServices, {
+  EXPENSE_CATEGORIES,
+} from "@/services/supabase/finance.supabase";
 import { FINANCE_KEYS } from "@/constants/queryKeys";
 import type {
   ApiResponse,
@@ -9,6 +11,80 @@ import type {
   UpdateFinancePayload,
   FinanceSummary,
 } from "@/types";
+
+// 0. Categories Hook & Mutations
+const useFinanceCategories = () => {
+  const { data, isLoading, isError, error, refetch } = useQuery<
+    ApiResponse<{ categories: string[] }>
+  >({
+    queryKey: [FINANCE_KEYS.CATEGORIES],
+    queryFn: () => financeServices.getFinanceCategories(),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  return {
+    categories: data?.data?.categories ?? [...EXPENSE_CATEGORIES],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  };
+};
+
+const useCreateFinanceCategory = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<{ categories: string[]; category: string }>,
+    Error,
+    string
+  >({
+    mutationFn: (name) => financeServices.createFinanceCategory(name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [FINANCE_KEYS.CATEGORIES] });
+      toast.success("নতুন খাত যোগ করা হয়েছে");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to add category");
+    },
+  });
+};
+
+const useUpdateFinanceCategory = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    ApiResponse<{ categories: string[]; category: string }>,
+    Error,
+    { oldName: string; newName: string }
+  >({
+    mutationFn: (payload) => financeServices.updateFinanceCategory(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [FINANCE_KEYS.CATEGORIES] });
+      queryClient.invalidateQueries({ queryKey: [FINANCE_KEYS.TRANSACTIONS] });
+      queryClient.invalidateQueries({ queryKey: [FINANCE_KEYS.SUMMARY] });
+      toast.success("খাতের নাম আপডেট করা হয়েছে");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to update category");
+    },
+  });
+};
+
+const useDeleteFinanceCategory = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<ApiResponse<{ categories: string[] }>, Error, string>({
+    mutationFn: (name) => financeServices.deleteFinanceCategory(name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [FINANCE_KEYS.CATEGORIES] });
+      toast.success("খাতটি মুছে ফেলা হয়েছে");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to delete category");
+    },
+  });
+};
 
 // 1. Transactions List Hook
 const useFinanceTransactions = (params?: {
@@ -120,6 +196,10 @@ const useDeleteFinanceTransaction = () => {
 };
 
 const financeHooks = {
+  useFinanceCategories,
+  useCreateFinanceCategory,
+  useUpdateFinanceCategory,
+  useDeleteFinanceCategory,
   useFinanceTransactions,
   useFinanceSummary,
   useCreateFinanceTransaction,

@@ -12,9 +12,9 @@ import {
 import type { FinanceTransaction, UpdateFinancePayload } from "@/types";
 import {
   EXPENSE_CATEGORIES,
-  FINANCE_CATEGORY_COLORS,
   PAYMENT_METHODS,
 } from "@/services/supabase/finance.supabase";
+import { ExpenseCategorySelector } from "./ExpenseCategorySelector";
 
 interface EditExpenseModalProps {
   isOpen: boolean;
@@ -68,14 +68,6 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
       notes: notes.trim() || undefined,
     });
   };
-
-  const categoriesList =
-    transaction?.category &&
-    !EXPENSE_CATEGORIES.includes(
-      transaction.category as (typeof EXPENSE_CATEGORIES)[number]
-    )
-      ? [transaction.category, ...EXPENSE_CATEGORIES]
-      : EXPENSE_CATEGORIES;
 
   const paymentMethodsList =
     transaction?.payment_method &&
@@ -174,37 +166,10 @@ export const EditExpenseModal: React.FC<EditExpenseModalProps> = ({
               </div>
             </div>
 
-            <div>
-              <label className="mb-1 block text-xs font-bold text-gray-700">
-                খরচের খাত (Category) *
-              </label>
-              <div className="grid max-h-40 grid-cols-2 gap-1.5 overflow-y-auto pr-1 sm:grid-cols-3">
-                {categoriesList.map((cat) => {
-                  const isSelected = category === cat;
-                  const color = FINANCE_CATEGORY_COLORS[cat] || "#64748B";
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setCategory(cat)}
-                      className={`flex cursor-pointer items-center gap-2 rounded-xl border p-2 text-left transition-all ${
-                        isSelected
-                          ? "border-blue-500 bg-blue-50/70 shadow-xs ring-2 ring-blue-500/20"
-                          : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                      }`}
-                    >
-                      <span
-                        className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: color }}
-                      />
-                      <span className="truncate text-[11px] font-bold text-gray-800">
-                        {cat}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <ExpenseCategorySelector
+              selectedCategory={category}
+              onSelectCategory={setCategory}
+            />
 
             <div>
               <label className="mb-1 block text-xs font-bold text-gray-700">

@@ -11,7 +11,6 @@ import {
   Coins,
 } from "lucide-react";
 import type { FinanceTransaction } from "@/types";
-import { FINANCE_CATEGORY_COLORS } from "@/services/supabase/finance.supabase";
 
 interface ExpenseTimelineListProps {
   transactions: FinanceTransaction[];
@@ -200,7 +199,6 @@ export const ExpenseTimelineList: React.FC<ExpenseTimelineListProps> = ({
                 {/* Items in this Day: KOKHN + KOTO TAKA + KEE KAJ */}
                 <div className="divide-y divide-gray-100">
                   {items.map((tx) => {
-                    const catColor = FINANCE_CATEGORY_COLORS[tx.category] || "#64748B";
                     const displayTime = formatDisplayTime(tx.time);
 
                     return (
@@ -220,24 +218,9 @@ export const ExpenseTimelineList: React.FC<ExpenseTimelineListProps> = ({
 
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span
-                                className="h-2.5 w-2.5 shrink-0 rounded-full"
-                                style={{ backgroundColor: catColor }}
-                              />
                               <span className="text-xs font-bold text-gray-900 sm:text-sm">
-                                {tx.title || tx.category}
+                                {tx.category || tx.title}
                               </span>
-                              {tx.title && tx.title !== tx.category && (
-                                <span
-                                  className="inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold"
-                                  style={{
-                                    backgroundColor: `${catColor}15`,
-                                    color: catColor,
-                                  }}
-                                >
-                                  {tx.category}
-                                </span>
-                              )}
                             </div>
 
                             <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gray-400 font-medium">

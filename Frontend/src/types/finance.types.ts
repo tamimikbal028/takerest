@@ -43,7 +43,7 @@ export interface FinanceCategorySummary {
   total: number;
   count: number;
   percentage: number;
-  color: string;
+  color?: string;
 }
 
 export interface FinanceDailyPoint {

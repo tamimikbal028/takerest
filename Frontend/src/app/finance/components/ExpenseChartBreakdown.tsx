@@ -41,10 +41,6 @@ export const ExpenseChartBreakdown: React.FC<ExpenseChartBreakdownProps> = ({
             <div key={cat.category} className="space-y-1">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex min-w-0 items-center gap-2">
-                  <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: cat.color }}
-                  />
                   <span className="truncate font-bold text-gray-800">
                     {cat.category}
                   </span>
@@ -65,10 +61,9 @@ export const ExpenseChartBreakdown: React.FC<ExpenseChartBreakdownProps> = ({
               {/* Progress Bar */}
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
                 <div
-                  className="h-full rounded-full transition-all duration-300"
+                  className="h-full rounded-full bg-gray-800 transition-all duration-300"
                   style={{
                     width: `${cat.percentage}%`,
-                    backgroundColor: cat.color,
                   }}
                 />
               </div>

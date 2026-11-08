@@ -10,51 +10,143 @@ import type {
 } from "@/types";
 
 export const EXPENSE_CATEGORIES = [
-  "খাবার",
-  "মোবাইল রিচার্জ",
-  "তালিমুদ্দীন বেতন",
+  "সকাল নাস্তা",
+  "দুপুর খাবার",
+  "বিকাল নাস্তা",
+  "রাত খাবার",
+  "চা ও নাস্তা",
+  "ধার পরিশোধ",
+  "ডোনেশন",
   "ইন্টারনেট বিল",
-  "ধার শোধ করা",
-  "যাতায়াত",
-  "অন্যান্য খরচ",
+  "ডাইনিং বিল",
 ] as const;
 
-export const PAYMENT_METHODS = [
-  "Cash",
-  "bKash",
-  "Nagad",
-  "Rocket",
-  "Bank Transfer",
-  "Card",
-] as const;
+export const PAYMENT_METHODS = ["Cash", "bKash", "Rocket", "Other"] as const;
 
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
-export const FINANCE_CATEGORY_COLORS: Record<string, string> = {
-  খাবার: "#F59E0B",
-  "মোবাইল রিচার্জ": "#06B6D4",
-  "তালিমুদ্দীন বেতন": "#10B981",
-  "ইন্টারনেট বিল": "#3B82F6",
-  "ধার শোধ করা": "#EF4444",
-  যাতায়াত: "#8B5CF6",
-  "অন্যান্য খরচ": "#64748B",
-  // Legacy mappings for backwards compatibility
-  "সকাল নাস্তা": "#F59E0B",
-  "দুপুর খাবার": "#EA580C",
-  "বিকাল নাস্তা": "#F97316",
-  "রাত খাবার": "#8B5CF6",
-  "চা ও নাস্তা": "#D97706",
-  "খাবার ও নাস্তা (Food & Snacks)": "#F59E0B",
-  "যাতায়াত ও ভাড়া (Transport / Commute)": "#8B5CF6",
-  "বাজার ও মুদি (Groceries & Bazar)": "#10B981",
-  "চা-পান ও রিফ্রেশমেন্ট (Tea & Snacks)": "#D97706",
-  "মোবাইল রিচার্জ ও নেট (Mobile & Net)": "#06B6D4",
-  "বিল ও ইউটিলিটি (Bills & Utilities)": "#EF4444",
-  "ঔষধ ও চিকিৎসা (Medicine & Health)": "#14B8A6",
-  "কেনাকাটা ও পোশাক (Shopping)": "#EC4899",
-  "দান-সদকা (Charity / Sadaqah)": "#059669",
-  "পরিবার ও ব্যক্তিগত (Family & Personal)": "#6366F1",
-  "অন্যান্য খরচ (Others)": "#64748B",
+const getCategoriesStorageKey = (userId: string) =>
+  `takerest_finance_categories_v2_${userId}`;
+
+const loadStoredCategories = (userId: string): string[] => {
+  try {
+    const raw = localStorage.getItem(getCategoriesStorageKey(userId));
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {
+    // fallback to default
+  }
+  const defaults = [...EXPENSE_CATEGORIES];
+  localStorage.setItem(getCategoriesStorageKey(userId), JSON.stringify(defaults));
+  return defaults;
+};
+
+const saveStoredCategories = (userId: string, categories: string[]) => {
+  localStorage.setItem(
+    getCategoriesStorageKey(userId),
+    JSON.stringify(categories)
+  );
+};
+
+// 0. Category Management (Get, Create, Update/Rename, Delete)
+const getFinanceCategories = async (): Promise<
+  ApiResponse<{ categories: string[] }>
+> => {
+  const userId = await getActiveUserId();
+  const categories = loadStoredCategories(userId);
+  return {
+    success: true,
+    statusCode: 200,
+    message: "Categories fetched",
+    data: { categories },
+  };
+};
+
+const createFinanceCategory = async (
+  name: string
+): Promise<ApiResponse<{ categories: string[]; category: string }>> => {
+  const userId = await getActiveUserId();
+  const trimmed = name.trim();
+  if (!trimmed) {
+    throw new Error("খাতের নাম খালি রাখা যাবে না");
+  }
+
+  const current = loadStoredCategories(userId);
+  if (current.includes(trimmed)) {
+    throw new Error("এই খাতটি ইতিমধ্যে তালিকায় আছে");
+  }
+
+  const updated = [...current, trimmed];
+  saveStoredCategories(userId, updated);
+
+  return {
+    success: true,
+    statusCode: 201,
+    message: "নতুন খাত যোগ করা হয়েছে",
+    data: { categories: updated, category: trimmed },
+  };
+};
+
+const updateFinanceCategory = async (payload: {
+  oldName: string;
+  newName: string;
+}): Promise<ApiResponse<{ categories: string[]; category: string }>> => {
+  const userId = await getActiveUserId();
+  const oldTrimmed = payload.oldName.trim();
+  const newTrimmed = payload.newName.trim();
+
+  if (!newTrimmed) {
+    throw new Error("খাতের নাম খালি রাখা যাবে না");
+  }
+
+  const current = loadStoredCategories(userId);
+  if (oldTrimmed !== newTrimmed && current.includes(newTrimmed)) {
+    throw new Error("এই নামের খাত ইতিমধ্যে আছে");
+  }
+
+  const updated = current.map((c) => (c === oldTrimmed ? newTrimmed : c));
+  saveStoredCategories(userId, updated);
+
+  // Also update existing transactions with this category in Supabase
+  if (oldTrimmed !== newTrimmed) {
+    await supabase
+      .from("finance_transactions")
+      .update({ category: newTrimmed, title: newTrimmed })
+      .eq("user_id", userId)
+      .eq("category", oldTrimmed);
+  }
+
+  return {
+    success: true,
+    statusCode: 200,
+    message: "খাতের নাম পরিবর্তন করা হয়েছে",
+    data: { categories: updated, category: newTrimmed },
+  };
+};
+
+const deleteFinanceCategory = async (
+  name: string
+): Promise<ApiResponse<{ categories: string[] }>> => {
+  const userId = await getActiveUserId();
+  const current = loadStoredCategories(userId);
+  const updated = current.filter((c) => c !== name);
+
+  if (updated.length === 0) {
+    throw new Error("অন্তত একটি খাত থাকতে হবে");
+  }
+
+  saveStoredCategories(userId, updated);
+
+  return {
+    success: true,
+    statusCode: 200,
+    message: "খাতটি মুছে ফেলা হয়েছে",
+    data: { categories: updated },
+  };
 };
 
 // 1. Fetch Expenses directly from Supabase
@@ -275,7 +367,6 @@ const getFinanceSummary = async (params: {
         total: stats.total,
         count: stats.count,
         percentage: Number(percentage.toFixed(1)),
-        color: FINANCE_CATEGORY_COLORS[category] || "#64748B",
       };
     })
     .sort((a, b) => b.total - a.total);
@@ -318,6 +409,10 @@ const getFinanceSummary = async (params: {
 };
 
 const financeServices = {
+  getFinanceCategories,
+  createFinanceCategory,
+  updateFinanceCategory,
+  deleteFinanceCategory,
   getFinanceTransactions,
   createFinanceTransaction,
   updateFinanceTransaction,
