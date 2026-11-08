@@ -42,7 +42,6 @@ const useCreateFinanceCategory = () => {
     mutationFn: (name) => financeServices.createFinanceCategory(name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [FINANCE_KEYS.CATEGORIES] });
-      toast.success("নতুন খাত যোগ করা হয়েছে");
     },
     onError: (err) => {
       toast.error(err.message || "Failed to add category");
@@ -63,7 +62,6 @@ const useUpdateFinanceCategory = () => {
       queryClient.invalidateQueries({ queryKey: [FINANCE_KEYS.CATEGORIES] });
       queryClient.invalidateQueries({ queryKey: [FINANCE_KEYS.TRANSACTIONS] });
       queryClient.invalidateQueries({ queryKey: [FINANCE_KEYS.SUMMARY] });
-      toast.success("খাতের নাম আপডেট করা হয়েছে");
     },
     onError: (err) => {
       toast.error(err.message || "Failed to update category");
@@ -78,7 +76,6 @@ const useDeleteFinanceCategory = () => {
     mutationFn: (name) => financeServices.deleteFinanceCategory(name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [FINANCE_KEYS.CATEGORIES] });
-      toast.success("খাতটি মুছে ফেলা হয়েছে");
     },
     onError: (err) => {
       toast.error(err.message || "Failed to delete category");
@@ -149,7 +146,6 @@ const useCreateFinanceTransaction = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [FINANCE_KEYS.TRANSACTIONS] });
       queryClient.invalidateQueries({ queryKey: [FINANCE_KEYS.SUMMARY] });
-      toast.success("খরচের হিসাব যোগ করা হয়েছে");
     },
     onError: (err) => {
       toast.error(err.message || "Failed to add transaction");
@@ -170,7 +166,6 @@ const useUpdateFinanceTransaction = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [FINANCE_KEYS.TRANSACTIONS] });
       queryClient.invalidateQueries({ queryKey: [FINANCE_KEYS.SUMMARY] });
-      toast.success("Transaction updated");
     },
     onError: (err) => {
       toast.error(err.message || "Failed to update transaction");
@@ -187,7 +182,6 @@ const useDeleteFinanceTransaction = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [FINANCE_KEYS.TRANSACTIONS] });
       queryClient.invalidateQueries({ queryKey: [FINANCE_KEYS.SUMMARY] });
-      toast.success("Transaction deleted");
     },
     onError: (err) => {
       toast.error(err.message || "Failed to delete transaction");

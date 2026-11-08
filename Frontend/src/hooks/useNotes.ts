@@ -45,13 +45,8 @@ const useCreateNote = () => {
     CreateNotePayload
   >({
     mutationFn: (payload) => noteServices.createNote(payload),
-    onSuccess: (res) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [NOTE_KEYS.NOTES] });
-      toast.success(
-        res.data.note.note_type === "CHECKLIST"
-          ? "Checklist created successfully!"
-          : "Note created successfully!"
-      );
     },
     onError: (err) => {
       toast.error(err.message || "Failed to save note");
@@ -71,7 +66,6 @@ const useUpdateNote = () => {
     mutationFn: (payload) => noteServices.updateNote(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [NOTE_KEYS.NOTES] });
-      toast.success("Note updated successfully");
     },
     onError: (err) => {
       toast.error(err.message || "Failed to update note");
@@ -107,7 +101,6 @@ const useDeleteNote = () => {
     mutationFn: (id) => noteServices.deleteNote(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [NOTE_KEYS.NOTES] });
-      toast.success("Note deleted successfully");
     },
     onError: (err) => {
       toast.error(err.message || "Failed to delete note");
@@ -126,11 +119,8 @@ const useTogglePinNote = () => {
   >({
     mutationFn: ({ id, is_pinned }) =>
       noteServices.togglePinNote(id, is_pinned),
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [NOTE_KEYS.NOTES] });
-      toast.success(
-        variables.is_pinned ? "Note unpinned" : "Note pinned to top"
-      );
     },
     onError: (err) => {
       toast.error(err.message || "Failed to update pin status");
@@ -149,13 +139,8 @@ const useToggleArchiveNote = () => {
   >({
     mutationFn: ({ id, is_archived }) =>
       noteServices.toggleArchiveNote(id, is_archived),
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [NOTE_KEYS.NOTES] });
-      toast.success(
-        variables.is_archived
-          ? "Note restored from archive"
-          : "Note archived"
-      );
     },
     onError: (err) => {
       toast.error(err.message || "Failed to update archive status");

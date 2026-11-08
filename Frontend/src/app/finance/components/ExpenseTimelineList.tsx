@@ -1,6 +1,5 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import {
-  Search,
   Filter,
   Trash2,
   Edit2,
@@ -8,7 +7,6 @@ import {
   Clock,
   CreditCard,
   FileText,
-  Coins,
 } from "lucide-react";
 import type { FinanceTransaction } from "@/types";
 
@@ -41,40 +39,16 @@ export const ExpenseTimelineList: React.FC<ExpenseTimelineListProps> = ({
   onDelete,
   isDeleting,
 }) => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
-
-  const availableCategories = useMemo(() => {
-    const cats = new Set<string>();
-    transactions.forEach((t) => cats.add(t.category));
-    return Array.from(cats);
-  }, [transactions]);
-
-  const filtered = useMemo(() => {
-    return transactions.filter((t) => {
-      if (selectedCategory !== "ALL" && t.category !== selectedCategory) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesTitle = t.title.toLowerCase().includes(q);
-        const matchesCat = t.category.toLowerCase().includes(q);
-        const matchesMethod = t.payment_method?.toLowerCase().includes(q);
-        const matchesNotes = t.notes?.toLowerCase().includes(q);
-        if (!matchesTitle && !matchesCat && !matchesMethod && !matchesNotes) return false;
-      }
-      return true;
-    });
-  }, [transactions, selectedCategory, searchQuery]);
-
   // Group by date (descending order)
   const groupedByDate = useMemo(() => {
     const map = new Map<string, FinanceTransaction[]>();
-    filtered.forEach((tx) => {
+    transactions.forEach((tx) => {
       const list = map.get(tx.date) || [];
       list.push(tx);
       map.set(tx.date, list);
     });
     return Array.from(map.entries());
-  }, [filtered]);
+  }, [transactions]);
 
   if (isLoading) {
     return (
@@ -88,51 +62,6 @@ export const ExpenseTimelineList: React.FC<ExpenseTimelineListProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Search and Category Filter */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-3.5 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
-            <Coins className="h-4 w-4" />
-          </div>
-          <div>
-            <h3 className="text-xs font-bold text-gray-900 sm:text-sm">
-              দৈনিক খরচের সময়ানুক্রমিক তালিকা (Expense Feed)
-            </h3>
-            <p className="text-[11px] text-gray-400">
-              কোন দিন কখন কত টাকা খরচ হলো
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 sm:w-48">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-3.5 w-3.5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="খরচের বিবরণ খুঁজুন..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 py-1.5 pr-2.5 pl-8 text-xs font-semibold text-gray-800 transition focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/15"
-            />
-          </div>
-
-          {availableCategories.length > 0 && (
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="cursor-pointer rounded-xl border border-gray-200 bg-gray-50 py-1.5 pr-6 pl-2.5 text-xs font-bold text-gray-700 transition hover:bg-white focus:border-amber-500 focus:outline-none"
-            >
-              <option value="ALL">সকল খাত (All)</option>
-              {availableCategories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-      </div>
-
       {/* Grouped by Day List */}
       {groupedByDate.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-gray-200 bg-white py-12 text-center">
@@ -143,9 +72,7 @@ export const ExpenseTimelineList: React.FC<ExpenseTimelineListProps> = ({
             কোনো খরচের রেকর্ড পাওয়া যায়নি
           </p>
           <p className="mt-1 text-xs text-gray-400">
-            {searchQuery || selectedCategory !== "ALL"
-              ? "ফিল্টার পরিবর্তন করে আবার চেষ্টা করুন।"
-              : "নতুন খরচ যোগ করতে উপরের '+ নতুন খরচ যোগ করুন' বোতামে ক্লিক করুন।"}
+            নতুন খরচ যোগ করতে উপরের &apos;+ Add new expense&apos; বোতামে ক্লিক করুন।
           </p>
         </div>
       ) : (
@@ -191,7 +118,7 @@ export const ExpenseTimelineList: React.FC<ExpenseTimelineListProps> = ({
                   <div className="text-right">
                     <span className="text-xs text-gray-500 font-medium">দিনের মোট: </span>
                     <span className="text-xs font-black text-rose-600 sm:text-sm">
-                      ৳{dayTotal.toLocaleString("en-IN")}
+                      {dayTotal.toLocaleString("en-IN")}
                     </span>
                   </div>
                 </div>
@@ -241,7 +168,7 @@ export const ExpenseTimelineList: React.FC<ExpenseTimelineListProps> = ({
                         <div className="flex items-center gap-3 shrink-0">
                           <div className="text-right">
                             <span className="text-sm font-black tracking-tight text-rose-600 sm:text-base">
-                              -৳{Number(tx.amount).toLocaleString("en-IN")}
+                              {Number(tx.amount).toLocaleString("en-IN")}
                             </span>
                           </div>
 

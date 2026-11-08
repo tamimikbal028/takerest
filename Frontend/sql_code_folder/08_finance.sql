@@ -59,4 +59,35 @@ CREATE TRIGGER trigger_finance_transactions_updated_at
 GRANT ALL ON TABLE public.finance_transactions TO authenticated;
 GRANT ALL ON TABLE public.finance_transactions TO service_role;
 
+-- 2. FINANCE CATEGORIES TABLE (finance_categories)
+CREATE TABLE IF NOT EXISTS public.finance_categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_finance_categories_user_sort
+  ON public.finance_categories (user_id, sort_order ASC, created_at ASC);
+
+ALTER TABLE public.finance_categories ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage own finance categories" ON public.finance_categories;
+CREATE POLICY "Users can manage own finance categories"
+  ON public.finance_categories FOR ALL TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+DROP TRIGGER IF EXISTS trigger_finance_categories_updated_at ON public.finance_categories;
+CREATE TRIGGER trigger_finance_categories_updated_at
+  BEFORE UPDATE ON public.finance_categories
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+GRANT ALL ON TABLE public.finance_categories TO authenticated;
+GRANT ALL ON TABLE public.finance_categories TO service_role;
+
+
 

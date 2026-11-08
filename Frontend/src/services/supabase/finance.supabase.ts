@@ -25,39 +25,50 @@ export const PAYMENT_METHODS = ["Cash", "bKash", "Rocket", "Other"] as const;
 
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
-const getCategoriesStorageKey = (userId: string) =>
-  `takerest_finance_categories_v2_${userId}`;
-
-const loadStoredCategories = (userId: string): string[] => {
-  try {
-    const raw = localStorage.getItem(getCategoriesStorageKey(userId));
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch {
-    // fallback to default
-  }
-  const defaults = [...EXPENSE_CATEGORIES];
-  localStorage.setItem(getCategoriesStorageKey(userId), JSON.stringify(defaults));
-  return defaults;
-};
-
-const saveStoredCategories = (userId: string, categories: string[]) => {
-  localStorage.setItem(
-    getCategoriesStorageKey(userId),
-    JSON.stringify(categories)
-  );
-};
-
-// 0. Category Management (Get, Create, Update/Rename, Delete)
+// 0. Category Management in Supabase DB (finance_categories table)
 const getFinanceCategories = async (): Promise<
   ApiResponse<{ categories: string[] }>
 > => {
   const userId = await getActiveUserId();
-  const categories = loadStoredCategories(userId);
+
+  const { data, error } = await supabase
+    .from("finance_categories")
+    .select("name, sort_order")
+    .eq("user_id", userId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message || "Failed to fetch finance categories");
+  }
+
+  let rows = data || [];
+
+  // Provision starter categories in DB if user has none yet
+  if (rows.length === 0) {
+    const starterRows = EXPENSE_CATEGORIES.map((name, index) => ({
+      user_id: userId,
+      name,
+      sort_order: index + 1,
+    }));
+
+    const { data: inserted, error: insertError } = await supabase
+      .from("finance_categories")
+      .insert(starterRows)
+      .select("name, sort_order")
+      .order("sort_order", { ascending: true });
+
+    if (insertError) {
+      throw new Error(
+        insertError.message || "Failed to initialize default finance categories"
+      );
+    }
+
+    rows = inserted || [];
+  }
+
+  const categories = rows.map((r: { name: string }) => r.name);
+
   return {
     success: true,
     statusCode: 200,
@@ -75,13 +86,31 @@ const createFinanceCategory = async (
     throw new Error("খাতের নাম খালি রাখা যাবে না");
   }
 
-  const current = loadStoredCategories(userId);
-  if (current.includes(trimmed)) {
+  // Get current count for sort_order
+  const { data: existing } = await supabase
+    .from("finance_categories")
+    .select("name, sort_order")
+    .eq("user_id", userId)
+    .order("sort_order", { ascending: true });
+
+  const currentList = (existing || []).map((r: { name: string }) => r.name);
+  if (currentList.includes(trimmed)) {
     throw new Error("এই খাতটি ইতিমধ্যে তালিকায় আছে");
   }
 
-  const updated = [...current, trimmed];
-  saveStoredCategories(userId, updated);
+  const nextSortOrder = (existing?.length || 0) + 1;
+
+  const { error } = await supabase.from("finance_categories").insert({
+    user_id: userId,
+    name: trimmed,
+    sort_order: nextSortOrder,
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to create category");
+  }
+
+  const updated = [...currentList, trimmed];
 
   return {
     success: true,
@@ -103,22 +132,33 @@ const updateFinanceCategory = async (payload: {
     throw new Error("খাতের নাম খালি রাখা যাবে না");
   }
 
-  const current = loadStoredCategories(userId);
-  if (oldTrimmed !== newTrimmed && current.includes(newTrimmed)) {
-    throw new Error("এই নামের খাত ইতিমধ্যে আছে");
-  }
-
-  const updated = current.map((c) => (c === oldTrimmed ? newTrimmed : c));
-  saveStoredCategories(userId, updated);
-
-  // Also update existing transactions with this category in Supabase
   if (oldTrimmed !== newTrimmed) {
+    const { error } = await supabase
+      .from("finance_categories")
+      .update({ name: newTrimmed })
+      .eq("user_id", userId)
+      .eq("name", oldTrimmed);
+
+    if (error) {
+      throw new Error(error.message || "Failed to update category");
+    }
+
+    // Also update existing transactions with this category in Supabase
     await supabase
       .from("finance_transactions")
       .update({ category: newTrimmed, title: newTrimmed })
       .eq("user_id", userId)
       .eq("category", oldTrimmed);
   }
+
+  const { data: refreshed } = await supabase
+    .from("finance_categories")
+    .select("name")
+    .eq("user_id", userId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  const updated = (refreshed || []).map((r: { name: string }) => r.name);
 
   return {
     success: true,
@@ -132,14 +172,34 @@ const deleteFinanceCategory = async (
   name: string
 ): Promise<ApiResponse<{ categories: string[] }>> => {
   const userId = await getActiveUserId();
-  const current = loadStoredCategories(userId);
-  const updated = current.filter((c) => c !== name);
 
-  if (updated.length === 0) {
+  const { data: existing } = await supabase
+    .from("finance_categories")
+    .select("name")
+    .eq("user_id", userId);
+
+  if ((existing?.length || 0) <= 1) {
     throw new Error("অন্তত একটি খাত থাকতে হবে");
   }
 
-  saveStoredCategories(userId, updated);
+  const { error } = await supabase
+    .from("finance_categories")
+    .delete()
+    .eq("user_id", userId)
+    .eq("name", name);
+
+  if (error) {
+    throw new Error(error.message || "Failed to delete category");
+  }
+
+  const { data: refreshed } = await supabase
+    .from("finance_categories")
+    .select("name")
+    .eq("user_id", userId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  const updated = (refreshed || []).map((r: { name: string }) => r.name);
 
   return {
     success: true,
