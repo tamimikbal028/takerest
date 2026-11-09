@@ -107,14 +107,14 @@ Frontend/
 
 All SQL migration scripts live inside `sql_code_folder/`.
 
-| Table Name             | Purpose                                    | Key Columns                                                                                                              |
-| ---------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `users`                | User profiles linked to `auth.users(id)`   | `id (UUID PK)`, `full_name`, `email`, `user_name`, `avatar`, `created_at`                                                |
-| `categories`           | Tracking categories (Deen, Academic, etc.) | `id`, `user_id`, `name`, `color`, `icon`, `is_system_default`, `sort_order`                                              |
-| `activities`           | Activities under each category             | `id`, `user_id`, `category_id`, `name`, `color`, `icon`, `sort_order`                                                    |
-| `time_logs`            | Completed time intervals for the 24h wheel | `id`, `user_id`, `category_id`, `activity_id`, `start_time`, `end_time`, `duration_minutes`, `is_wasted`, `date`         |
-| `active_timer`         | Live timer state surviving page refreshes  | `user_id (PK)`, `activity_id`, `start_time`, `is_running`, `elapsed_seconds`                                             |
-| `notes`                | Personal notes, scratchpad & interactive checklists | `id`, `user_id`, `title`, `content`, `note_type`, `checklist_items (JSONB)`, `color`, `is_pinned`, `is_archived`, `tags`, `created_at`, `updated_at` |
+| Table Name     | Purpose                                             | Key Columns                                                                                                                                          |
+| -------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `users`        | User profiles linked to `auth.users(id)`            | `id (UUID PK)`, `full_name`, `email`, `user_name`, `avatar`, `created_at`                                                                            |
+| `categories`   | Tracking categories (Deen, Academic, etc.)          | `id`, `user_id`, `name`, `color`, `icon`, `is_system_default`, `sort_order`                                                                          |
+| `activities`   | Activities under each category                      | `id`, `user_id`, `category_id`, `name`, `color`, `icon`, `sort_order`                                                                                |
+| `time_logs`    | Completed time intervals for the 24h wheel          | `id`, `user_id`, `category_id`, `activity_id`, `start_time`, `end_time`, `duration_minutes`, `is_wasted`, `date`                                     |
+| `active_timer` | Live timer state surviving page refreshes           | `user_id (PK)`, `activity_id`, `start_time`, `is_running`, `elapsed_seconds`                                                                         |
+| `notes`        | Personal notes, scratchpad & interactive checklists | `id`, `user_id`, `title`, `content`, `note_type`, `checklist_items (JSONB)`, `color`, `is_pinned`, `is_archived`, `tags`, `created_at`, `updated_at` |
 
 ### Security & Row Level Security (RLS)
 
@@ -160,12 +160,15 @@ All SQL migration scripts live inside `sql_code_folder/`.
   ```
 
 - **Explicit Generics**: Always specify explicit generics to `useQuery` and `useMutation`:
+
   ```ts
   useQuery<ApiResponse<{ notes: Note[] }>>({ ... });
   useMutation<ApiResponse<{ note: Note }>, Error, CreateNotePayload>({ ... });
   ```
+
 - **Query Keys**: Never hardcode query key strings directly. Always reference `src/constants/queryKeys.ts` (e.g., `NOTE_KEYS.NOTES`).
 - **Hook Destructuring in Components**: Always destructure immediately:
+
   ```tsx
   const { notes, isLoading } = noteHooks.useNotes();
   const { mutate: createNote } = noteHooks.useCreateNote();
