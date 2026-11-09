@@ -24,5 +24,15 @@ const NOTE_KEYS = {
   NOTE_DETAILS: "NOTE_DETAILS",
 } as const;
 
-export { AUTH_KEYS, TRACKER_KEYS, FINANCE_KEYS, SIN_KEYS, NOTE_KEYS };
+const GOAL_KEYS = {
+  GOALS: "DAILY_GOALS",
+} as const;
 
+export {
+  AUTH_KEYS,
+  TRACKER_KEYS,
+  FINANCE_KEYS,
+  SIN_KEYS,
+  NOTE_KEYS,
+  GOAL_KEYS,
+};

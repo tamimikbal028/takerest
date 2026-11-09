@@ -2,9 +2,9 @@ import { NavLink } from "react-router-dom";
 import {
   Menu,
   LayoutDashboard,
+  Target,
   Coins,
   StickyNote,
-  Settings,
 } from "lucide-react";
 
 interface MobileTopNavbarProps {
@@ -19,6 +19,11 @@ const MobileTopNavbar = ({ onToggleSidebar }: MobileTopNavbarProps) => {
       label: "Home",
     },
     {
+      to: "/goals",
+      icon: Target,
+      label: "Goals",
+    },
+    {
       to: "/finance",
       icon: Coins,
       label: "Finance",
@@ -27,11 +32,6 @@ const MobileTopNavbar = ({ onToggleSidebar }: MobileTopNavbarProps) => {
       to: "/notes",
       icon: StickyNote,
       label: "Notes",
-    },
-    {
-      to: "/settings",
-      icon: Settings,
-      label: "Settings",
     },
   ];
 

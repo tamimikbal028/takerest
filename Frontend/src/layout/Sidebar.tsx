@@ -7,6 +7,7 @@ import {
   User,
   Coins,
   StickyNote,
+  Target,
 } from "lucide-react";
 import authHooks from "@/hooks/useAuth";
 
@@ -24,6 +25,12 @@ const Sidebar = ({ onClose }: SidebarProps) => {
       label: "Home",
       path: "/",
       active: location.pathname === "/",
+    },
+    {
+      icon: Target,
+      label: "Goals",
+      path: "/goals",
+      active: location.pathname.startsWith("/goals"),
     },
     {
       icon: Coins,

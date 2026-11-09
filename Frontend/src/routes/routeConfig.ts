@@ -79,6 +79,16 @@ export const routes: RouteConfig[] = [
     category: "main",
   },
 
+  // Daily Goals & Targets
+  {
+    path: "/goals",
+    display: true,
+    Component: lazy(() => import("@/app/goals/page")),
+    requireAuth: true,
+    title: "Goals & Targets - Take Rest",
+    category: "main",
+  },
+
   // Statistics
   {
     path: "/statistics",
